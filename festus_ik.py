@@ -114,7 +114,7 @@ def write_to_servos():
 
 
 # FOR TESTING -> Set target position and orientation for chassis
-body_position = [0, 0, 180, 40, 0, 0]  # x, y, z (mm); yaw, pitch, roll (deg)
+body_position = [0, 0, 190, 0, 0, 0]  # x, y, z (mm); yaw, pitch, roll (deg)
 
 leg_angles(body_position)
 
