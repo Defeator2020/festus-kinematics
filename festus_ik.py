@@ -23,8 +23,18 @@ servo_offsets = [0, 0, 0, 0, -78, 80, -86, 86, 33, -32, 36, -36, 11, -2, -6, -5]
 servo_positions = [90, 90, 90, 90, 0, 120, 0, 120, 60, 60, 60, 60, 60, 60, 60, 60]  # 1, 2, 3, 4 peripheral; rr, rl, fr, fl wrists; rr, rl, fr, fl elbows; rr, rl, fr, fl shoulders
 
 
+# Bezier curves
+p1 = [-5,0]
+p2 = [-2.5,2.5]
+p3 = [5,5]
+p4 = [5,0]
+
+walk_x = p1[0]*(1-t)**3 + 3*p2[0]*(1-t)**2 + 3*p3[0]*(1-t)*t**2 + p4[0]*t**3
+walk_z = p1[1]*(1-t)**3 + 3*p2[1]*(1-t)**2 + 3*p3[1]*(1-t)*t**2 + p4[1]*t**3
+
+
 # KINEMATIC CALCULATIONS
-def leg_angles(target_body_parameters):
+def leg_angles(target_body_parameters, individual_offsets):
 
     target_x = target_body_parameters[0]
     target_y = target_body_parameters[1]
@@ -43,25 +53,25 @@ def leg_angles(target_body_parameters):
     
     # Pitch calculation --------------------
     pitch_height_offset = (body_length*math.sin(target_pitch))/2
-    longitudinal_foot_offset = abs((body_length*(1 - math.cos(target_pitch)))/2)
+    pitch_longitudinal_offset = abs((body_length*(1 - math.cos(target_pitch)))/2)
     
     # Roll calculation --------------------
     roll_height_offset = (body_width*math.sin(target_roll))/2
-    lateral_foot_offset = abs((body_width*(1 - math.cos(target_roll)))/2)
+    roll_lateral_offset = abs((body_width*(1 - math.cos(target_roll)))/2)
     
     # Compensate for corner height shifts because of chassis orientation
-    leg_target_positions[0] = target_x - longitudinal_foot_offset + yaw_longitudinal_offset
-    leg_target_positions[1] = target_y - lateral_foot_offset + yaw_lateral_offset
-    leg_target_positions[2] = target_z - pitch_height_offset + roll_height_offset
-    leg_target_positions[3] = target_x - longitudinal_foot_offset - yaw_longitudinal_offset
-    leg_target_positions[4] = target_y + lateral_foot_offset + yaw_lateral_offset
-    leg_target_positions[5] = target_z - pitch_height_offset - roll_height_offset
-    leg_target_positions[6] = target_x + longitudinal_foot_offset + yaw_longitudinal_offset
-    leg_target_positions[7] = target_y - lateral_foot_offset - yaw_lateral_offset
-    leg_target_positions[8] = target_z + pitch_height_offset + roll_height_offset
-    leg_target_positions[9] = target_x + longitudinal_foot_offset - yaw_longitudinal_offset
-    leg_target_positions[10] = target_y + lateral_foot_offset - yaw_lateral_offset
-    leg_target_positions[11] = target_z + pitch_height_offset - roll_height_offset
+    leg_target_positions[0] = target_x - pitch_longitudinal_offset + yaw_longitudinal_offset + individual_offsets[0]
+    leg_target_positions[1] = target_y - roll_lateral_offset + yaw_lateral_offset + individual_offsets[1]
+    leg_target_positions[2] = target_z - pitch_height_offset + roll_height_offset + individual_offsets[2]
+    leg_target_positions[3] = target_x - pitch_longitudinal_offset - yaw_longitudinal_offset + individual_offsets[3]
+    leg_target_positions[4] = target_y + roll_lateral_offset + yaw_lateral_offset + individual_offsets[4]
+    leg_target_positions[5] = target_z - pitch_height_offset - roll_height_offset + individual_offsets[5]
+    leg_target_positions[6] = target_x + pitch_longitudinal_offset + yaw_longitudinal_offset + individual_offsets[6]
+    leg_target_positions[7] = target_y - roll_lateral_offset - yaw_lateral_offset + individual_offsets[7]
+    leg_target_positions[8] = target_z + pitch_height_offset + roll_height_offset + individual_offsets[8]
+    leg_target_positions[9] = target_x + pitch_longitudinal_offset - yaw_longitudinal_offset + individual_offsets[9]
+    leg_target_positions[10] = target_y + roll_lateral_offset - yaw_lateral_offset + individual_offsets[10]
+    leg_target_positions[11] = target_z + pitch_height_offset - roll_height_offset + individual_offsets[11]
 
     for i in range(4):  # Do this for each leg
         # Y offset calculation --------------------
@@ -113,10 +123,11 @@ def write_to_servos():
         kit.servo[i].angle = servo_positions[i]
 
 
-# FOR TESTING -> Set target position and orientation for chassis
+# FOR TESTING -> Set target position and orientation for chassis and feet
 body_position = [0, 0, 190, 0, 0, 0]  # x, y, z (mm); yaw, pitch, roll (deg)
+foot_positions = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]  # x, y, z; rr, rl, fr, fl
 
-leg_angles(body_position)
+leg_angles(body_position, foot_positions)
 
 # Print servo angles for debugging
 print(servo_positions)
