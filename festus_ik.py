@@ -43,7 +43,7 @@ def leg_angles(target_body_parameters, individual_offsets):
     target_pitch = np.deg2rad(target_body_parameters[4])  # Body pitch backward
     target_roll = np.deg2rad(target_body_parameters[5])  # Body roll left
     
-    leg_target_positions = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]  # x, y, z; rr, rl, fr, fl -> PLACEHOLDER; SHOULD CREATE WHEN ACTUALLY BEING FILLED?
+    leg_target_positions = [0]*12  # x, y, z; rr, rl, fr, fl
     
     # Yaw calculation --------------------
     shoulder_radius = math.sqrt((body_length)**2 + (body_width)**2)
@@ -59,17 +59,17 @@ def leg_angles(target_body_parameters, individual_offsets):
     roll_height_offset = (body_width*math.sin(target_roll))
     roll_lateral_offset = abs(body_width*(1 - math.cos(target_roll)))
     
-    # Compensate for corner height shifts because of chassis orientation
-    leg_target_positions[0] = -1*target_x - pitch_longitudinal_offset + yaw_longitudinal_offset + individual_offsets[0] + body_length
+    # Set foot positions on ground and compensate for corner height shifts because of chassis orientation
+    leg_target_positions[0] = -target_x - pitch_longitudinal_offset + yaw_longitudinal_offset + individual_offsets[0] + body_length
     leg_target_positions[1] = target_y - roll_lateral_offset + yaw_lateral_offset + individual_offsets[1] + body_width + shoulder_offset
     leg_target_positions[2] = target_z - pitch_height_offset + roll_height_offset + individual_offsets[2]
-    leg_target_positions[3] = -1*target_x - pitch_longitudinal_offset - yaw_longitudinal_offset + individual_offsets[3] + body_length
+    leg_target_positions[3] = -target_x - pitch_longitudinal_offset - yaw_longitudinal_offset + individual_offsets[3] + body_length
     leg_target_positions[4] = target_y + roll_lateral_offset + yaw_lateral_offset + individual_offsets[4] - body_width - shoulder_offset
     leg_target_positions[5] = target_z - pitch_height_offset - roll_height_offset + individual_offsets[5]
-    leg_target_positions[6] = -1*target_x + pitch_longitudinal_offset + yaw_longitudinal_offset + individual_offsets[6] - body_length
+    leg_target_positions[6] = -target_x + pitch_longitudinal_offset + yaw_longitudinal_offset + individual_offsets[6] - body_length
     leg_target_positions[7] = target_y - roll_lateral_offset - yaw_lateral_offset + individual_offsets[7] + body_width + shoulder_offset
     leg_target_positions[8] = target_z + pitch_height_offset + roll_height_offset + individual_offsets[8]
-    leg_target_positions[9] = -1*target_x + pitch_longitudinal_offset - yaw_longitudinal_offset + individual_offsets[9] - body_length
+    leg_target_positions[9] = -target_x + pitch_longitudinal_offset - yaw_longitudinal_offset + individual_offsets[9] - body_length
     leg_target_positions[10] = target_y + roll_lateral_offset - yaw_lateral_offset + individual_offsets[10] - body_width - shoulder_offset
     leg_target_positions[11] = target_z + pitch_height_offset - roll_height_offset + individual_offsets[11]
 
@@ -124,8 +124,8 @@ def write_to_servos():
 
 
 # FOR TESTING -> Set rest position and orientation for chassis and feet
-body_position = [0, 0, 190, 0, 20, 0]  # x, y, z (mm); yaw, pitch, roll (deg)
-foot_positions = [-1*body_length, -1*body_width, 0, -1*body_length, body_width, 0, body_length, -1*body_width, -80, body_length, body_width, 0]  # x, y, z; rr, rl, fr, fl
+body_position = [0, 0, 190, 0, 0, 0]  # x, y, z (mm); yaw, pitch, roll (deg)
+foot_positions = [-body_length, -body_width - 25, 0, -body_length, body_width + 25, 0, body_length, -body_width - 25, 0, body_length, body_width + 25, 0]  # x, y, z; rr, rl, fr, fl
 
 leg_angles(body_position, foot_positions)
 
