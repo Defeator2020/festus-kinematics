@@ -24,13 +24,13 @@ servo_positions = [90, 90, 90, 90, 0, 120, 0, 120, 60, 60, 60, 60, 60, 60, 60, 6
 
 
 # Bezier curves
-p1 = [-5,0]
-p2 = [-2.5,2.5]
-p3 = [5,5]
-p4 = [5,0]
+#p1 = [-5,0]
+#p2 = [-2.5,2.5]
+#p3 = [5,5]
+#p4 = [5,0]
 
-walk_x = p1[0]*(1-t)**3 + 3*p2[0]*(1-t)**2 + 3*p3[0]*(1-t)*t**2 + p4[0]*t**3
-walk_z = p1[1]*(1-t)**3 + 3*p2[1]*(1-t)**2 + 3*p3[1]*(1-t)*t**2 + p4[1]*t**3
+#walk_x = p1[0]*(1-t)**3 + 3*p2[0]*(1-t)**2 + 3*p3[0]*(1-t)*t**2 + p4[0]*t**3
+#walk_z = p1[1]*(1-t)**3 + 3*p2[1]*(1-t)**2 + 3*p3[1]*(1-t)*t**2 + p4[1]*t**3
 
 
 # KINEMATIC CALCULATIONS
@@ -40,8 +40,8 @@ def leg_angles(target_body_parameters, individual_offsets):
     target_y = target_body_parameters[1]  # Body shift right
     target_z = target_body_parameters[2]  # Body shift up
     target_yaw = np.deg2rad(target_body_parameters[3])  # Body yaw clockwise
-    target_pitch = np.deg2rad(target_body_parameters[4])  # Body pitch forward
-    target_roll = np.deg2rad(target_body_parameters[5])  # Body roll right
+    target_pitch = np.deg2rad(target_body_parameters[4])  # Body pitch backward
+    target_roll = np.deg2rad(target_body_parameters[5])  # Body roll left
     
     leg_target_positions = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]  # x, y, z; rr, rl, fr, fl -> PLACEHOLDER; SHOULD CREATE WHEN ACTUALLY BEING FILLED?
     
@@ -124,8 +124,8 @@ def write_to_servos():
 
 
 # FOR TESTING -> Set rest position and orientation for chassis and feet
-rest_body_position = [0, 0, 190, 0, 0, 0]  # x, y, z (mm); yaw, pitch, roll (deg)
-rest_foot_positions = [-1*body_length, -1*body_width, 0, -1*body_length, body_width, 0, body_length, -1*body_width, 0, body_length, body_width, 0]  # x, y, z; rr, rl, fr, fl
+body_position = [0, 0, 190, 0, 20, 0]  # x, y, z (mm); yaw, pitch, roll (deg)
+foot_positions = [-1*body_length, -1*body_width, 0, -1*body_length, body_width, 0, body_length, -1*body_width, -80, body_length, body_width, 0]  # x, y, z; rr, rl, fr, fl
 
 leg_angles(body_position, foot_positions)
 
