@@ -61,16 +61,16 @@ def leg_angles(target_body_parameters, individual_offsets):
     
     # Compensate for corner height shifts because of chassis orientation
     leg_target_positions[0] = -1*target_x - pitch_longitudinal_offset + yaw_longitudinal_offset + individual_offsets[0] + body_length
-    leg_target_positions[1] = target_y - roll_lateral_offset + yaw_lateral_offset + individual_offsets[1] + body_width
+    leg_target_positions[1] = target_y - roll_lateral_offset + yaw_lateral_offset + individual_offsets[1] + body_width + shoulder_offset
     leg_target_positions[2] = target_z - pitch_height_offset + roll_height_offset + individual_offsets[2]
     leg_target_positions[3] = -1*target_x - pitch_longitudinal_offset - yaw_longitudinal_offset + individual_offsets[3] + body_length
-    leg_target_positions[4] = target_y + roll_lateral_offset + yaw_lateral_offset + individual_offsets[4] - body_width
+    leg_target_positions[4] = target_y + roll_lateral_offset + yaw_lateral_offset + individual_offsets[4] - body_width - shoulder_offset
     leg_target_positions[5] = target_z - pitch_height_offset - roll_height_offset + individual_offsets[5]
     leg_target_positions[6] = -1*target_x + pitch_longitudinal_offset + yaw_longitudinal_offset + individual_offsets[6] - body_length
-    leg_target_positions[7] = target_y - roll_lateral_offset - yaw_lateral_offset + individual_offsets[7] + body_width
+    leg_target_positions[7] = target_y - roll_lateral_offset - yaw_lateral_offset + individual_offsets[7] + body_width + shoulder_offset
     leg_target_positions[8] = target_z + pitch_height_offset + roll_height_offset + individual_offsets[8]
     leg_target_positions[9] = -1*target_x + pitch_longitudinal_offset - yaw_longitudinal_offset + individual_offsets[9] - body_length
-    leg_target_positions[10] = target_y + roll_lateral_offset - yaw_lateral_offset + individual_offsets[10] - body_width
+    leg_target_positions[10] = target_y + roll_lateral_offset - yaw_lateral_offset + individual_offsets[10] - body_width - shoulder_offset
     leg_target_positions[11] = target_z + pitch_height_offset - roll_height_offset + individual_offsets[11]
 
     for i in range(4):  # Do this for each leg
