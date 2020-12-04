@@ -12,9 +12,9 @@ for i in range(4, 16):
 # Define the size of various system elements (in mm)
 body_length = 180  # Front to rear leg pivots
 body_width = 80  # Between shoulder pivots
-shoulder_offset = 60
-upper_leg = 110
-lower_leg = 130
+shoulder_offset = 56
+upper_leg = 108
+lower_leg = 133
 
 # Define the servo rest offsets (the amount to adjust from 0 to make all elements point straight down)
 servo_offsets = [0, 0, 0, 0, -78, 80, -86, 86, 33, -32, 36, -36, 11, -2, -6, -5]  # 1, 2, 3, 4 peripheral; rr, rl, fr, fl wrists; rr, rl, fr, fl elbows; rr, rl, fr, fl shoulders
