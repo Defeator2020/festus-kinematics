@@ -10,8 +10,8 @@ for i in range(4, 16):
     kit.servo[i].actuation_range = 120
 
 # Define the size of various system elements (in mm)
-body_length = 180  # Front to rear leg pivots
-body_width = 80  # Between shoulder pivots
+body_length = 90  # Halfway between front to rear leg pivots
+body_width = 40  # Halfway between shoulder pivots
 shoulder_offset = 56
 upper_leg = 108
 lower_leg = 133
@@ -46,31 +46,31 @@ def leg_angles(target_body_parameters, individual_offsets):
     leg_target_positions = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]  # x, y, z; rr, rl, fr, fl -> PLACEHOLDER; SHOULD CREATE WHEN ACTUALLY BEING FILLED?
     
     # Yaw calculation --------------------
-    shoulder_radius = math.sqrt((body_length/2)**2 + (body_width/2)**2)
+    shoulder_radius = math.sqrt((body_length)**2 + (body_width)**2)
     alpha = math.atan(body_width/body_length)
-    yaw_lateral_offset = shoulder_radius*math.cos(alpha+target_yaw) - body_length/2
-    yaw_longitudinal_offset = shoulder_radius*math.sin(alpha+target_yaw) - body_width/2
+    yaw_lateral_offset = shoulder_radius*math.cos(alpha+target_yaw) - body_length
+    yaw_longitudinal_offset = shoulder_radius*math.sin(alpha+target_yaw) - body_width
     
     # Pitch calculation --------------------
-    pitch_height_offset = (body_length*math.sin(target_pitch))/2
-    pitch_longitudinal_offset = abs((body_length*(1 - math.cos(target_pitch)))/2)
+    pitch_height_offset = (body_length*math.sin(target_pitch))
+    pitch_longitudinal_offset = abs(body_length*(1 - math.cos(target_pitch)))
     
     # Roll calculation --------------------
-    roll_height_offset = (body_width*math.sin(target_roll))/2
-    roll_lateral_offset = abs((body_width*(1 - math.cos(target_roll)))/2)
+    roll_height_offset = (body_width*math.sin(target_roll))
+    roll_lateral_offset = abs(body_width*(1 - math.cos(target_roll)))
     
     # Compensate for corner height shifts because of chassis orientation
-    leg_target_positions[0] = -1*target_x - pitch_longitudinal_offset + yaw_longitudinal_offset + individual_offsets[0] + body_length/2
-    leg_target_positions[1] = target_y - roll_lateral_offset + yaw_lateral_offset + individual_offsets[1] + body_width/2
+    leg_target_positions[0] = -1*target_x - pitch_longitudinal_offset + yaw_longitudinal_offset + individual_offsets[0] + body_length
+    leg_target_positions[1] = target_y - roll_lateral_offset + yaw_lateral_offset + individual_offsets[1] + body_width
     leg_target_positions[2] = target_z - pitch_height_offset + roll_height_offset + individual_offsets[2]
-    leg_target_positions[3] = -1*target_x - pitch_longitudinal_offset - yaw_longitudinal_offset + individual_offsets[3] + body_length/2
-    leg_target_positions[4] = target_y + roll_lateral_offset + yaw_lateral_offset + individual_offsets[4] - body_width/2
+    leg_target_positions[3] = -1*target_x - pitch_longitudinal_offset - yaw_longitudinal_offset + individual_offsets[3] + body_length
+    leg_target_positions[4] = target_y + roll_lateral_offset + yaw_lateral_offset + individual_offsets[4] - body_width
     leg_target_positions[5] = target_z - pitch_height_offset - roll_height_offset + individual_offsets[5]
-    leg_target_positions[6] = -1*target_x + pitch_longitudinal_offset + yaw_longitudinal_offset + individual_offsets[6] - body_length/2
-    leg_target_positions[7] = target_y - roll_lateral_offset - yaw_lateral_offset + individual_offsets[7] + body_width/2
+    leg_target_positions[6] = -1*target_x + pitch_longitudinal_offset + yaw_longitudinal_offset + individual_offsets[6] - body_length
+    leg_target_positions[7] = target_y - roll_lateral_offset - yaw_lateral_offset + individual_offsets[7] + body_width
     leg_target_positions[8] = target_z + pitch_height_offset + roll_height_offset + individual_offsets[8]
-    leg_target_positions[9] = -1*target_x + pitch_longitudinal_offset - yaw_longitudinal_offset + individual_offsets[9] - body_length/2
-    leg_target_positions[10] = target_y + roll_lateral_offset - yaw_lateral_offset + individual_offsets[10] - body_width/2
+    leg_target_positions[9] = -1*target_x + pitch_longitudinal_offset - yaw_longitudinal_offset + individual_offsets[9] - body_length
+    leg_target_positions[10] = target_y + roll_lateral_offset - yaw_lateral_offset + individual_offsets[10] - body_width
     leg_target_positions[11] = target_z + pitch_height_offset - roll_height_offset + individual_offsets[11]
 
     for i in range(4):  # Do this for each leg
@@ -123,9 +123,9 @@ def write_to_servos():
         kit.servo[i].angle = servo_positions[i]
 
 
-# FOR TESTING -> Set target position and orientation for chassis and feet
-body_position = [0, 0, 190, 0, 0, 0]  # x, y, z (mm); yaw, pitch, roll (deg)
-foot_positions = [-1*body_length/2, -1*body_width/2, 0, -1*body_length/2, body_width/2, 0, body_length/2, -1*body_width/2, 0, body_length/2, body_width/2, 0]  # x, y, z; rr, rl, fr, fl
+# FOR TESTING -> Set rest position and orientation for chassis and feet
+rest_body_position = [0, 0, 190, 0, 0, 0]  # x, y, z (mm); yaw, pitch, roll (deg)
+rest_foot_positions = [-1*body_length, -1*body_width, 0, -1*body_length, body_width, 0, body_length, -1*body_width, 0, body_length, body_width, 0]  # x, y, z; rr, rl, fr, fl
 
 leg_angles(body_position, foot_positions)
 
