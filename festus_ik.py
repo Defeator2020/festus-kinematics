@@ -142,16 +142,22 @@ def lift_leg(leg):
 def write_to_servos():
     for i in range(16):
         kit.servo[i].angle = servo_positions[i]
-        print(servo_positions)  # Print servo angles for debugging
+    print(servo_positions)  # Print servo angles for debugging
 
 def reset_pose():
     # Set rest position and orientation for chassis and feet
     body_position = [0, 0, 190, 0, 0, 0]  # x, y, z (mm); yaw, pitch, roll (deg)
     foot_positions = [-body_length, -body_width - 25, 0, -body_length, body_width + 25, 0, body_length, -body_width - 25, 0, body_length, body_width + 25, 0]  # x, y, z; rr, rl, fr, fl
+    leg_angles(body_position, foot_positions)
+    write_to_servos()
+
+# Set rest position and orientation for chassis and feet
+body_position = [0, 0, 190, 0, 0, 0]  # x, y, z (mm); yaw, pitch, roll (deg)
+foot_positions = [-body_length, -body_width - 25, 0, -body_length, body_width + 25, 0, body_length, -body_width - 25, 0, body_length, body_width + 25, 0]  # x, y, z; rr, rl, fr, fl
+
 
 reset_pose()
-
-leg_angles(body_position, foot_positions)
-write_to_servos()
-
+time.sleep(1)
 lift_leg(2)
+time.sleep(1)
+reset_pose()
