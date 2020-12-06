@@ -16,6 +16,12 @@ shoulder_offset = 56
 upper_leg = 108
 lower_leg = 133
 
+# Define various gait parameters
+cg_x_offset = 0  # Forward of center
+cg_y_offset = 0  # Right of center
+leg_lift_height = 80
+static_lean_margin = 40  # Distance past zero moment point to lean (mm) in order to maintain stability when lifting one leg or walking in statically stable gait
+
 # Define the servo rest offsets (the amount to adjust from 0 to make all elements point straight down)
 servo_offsets = [0, 0, 0, 0, -78, 80, -86, 86, 33, -32, 36, -36, 11, -2, -6, -5]  # 1, 2, 3, 4 peripheral; rr, rl, fr, fl wrists; rr, rl, fr, fl elbows; rr, rl, fr, fl shoulders
 
@@ -116,11 +122,26 @@ def leg_angles(target_body_parameters, individual_offsets):
         servo_positions[8+i] = (elbow_angle_base - elbow_angle_shift)*elbow_flip + pitch_offset*target_body_parameters[4] + servo_offsets[8+i] + 60
         servo_positions[4+i] = (180 - wrist_angle)*wrist_flip + servo_offsets[4+i] + 60
 
-
+def lift_leg(leg):
+    body_position[0] = cg_x_offset
+    
+    if leg == 0 or leg == 2:
+        body_position[1] = -static_lean_margin - cg_y_offset
+    elif leg == 1 or leg == 3:
+        body_position[1] = static_lean_margin - cg_y_offset
+    
+    foot_positions[0 + 3*leg] += 0
+    foot_positions[1 + 3*leg] += 0
+    foot_positions[2 + 3*leg] -= leg_lift_height
+    
+    leg_angles(body_position, foot_positions)
+    write_to_servos()
+    
 # Write positions to servos
 def write_to_servos():
     for i in range(16):
         kit.servo[i].angle = servo_positions[i]
+        print(servo_positions)  # Print servo angles for debugging
 
 
 # FOR TESTING -> Set rest position and orientation for chassis and feet
@@ -128,8 +149,6 @@ body_position = [0, 0, 190, 0, 0, 0]  # x, y, z (mm); yaw, pitch, roll (deg)
 foot_positions = [-body_length, -body_width - 25, 0, -body_length, body_width + 25, 0, body_length, -body_width - 25, 0, body_length, body_width + 25, 0]  # x, y, z; rr, rl, fr, fl
 
 leg_angles(body_position, foot_positions)
-
-# Print servo angles for debugging
-print(servo_positions)
-
 write_to_servos()
+
+lift_leg(2)
