@@ -15,6 +15,8 @@ body_width = 40  # Halfway between hip pivots
 hip_offset = 56
 upper_leg = 108
 lower_leg = 133
+radius = math.sqrt(body_length**2 + body_width**2)  # Distance from center of body to shoulder (mm)
+alpha = math.atan(body_width/body_length)  # Existing angle between +x-axis and radius line about center of body (rad)
 
 # Define various servo properties (offset to make 0 straight down, rest positions, and the flip value to compensate for different servo directions)
 servo_offsets = [0, 0, 0, 0, -74, 76, -78, 78, 24, -24, 28, -28, 11, -2, -6, -5]  # 1, 2, 3, 4 peripheral; rr, rl, fr, fl wrists; rr, rl, fr, fl shoulders; rr, rl, fr, fl hips (same for all three)
@@ -35,38 +37,39 @@ def leg_angles(body_pose, foot_pose):
     
     # Pitch calculation --------------------
     pitch_height_shift = body_length*math.sin(target_pitch)
-    longitudinal_shift = body_length*(1-math.cos(target_pitch))
+    longitudinal_pitch = body_length*(1-math.cos(target_pitch))
     
     # Roll calculation --------------------
     roll_height_shift = body_width*math.sin(target_roll)
-    lateral_shift = body_width*(1-math.cos(target_roll))
+    lateral_roll = body_width*(1-math.cos(target_roll))
+    
+    # Yaw calculation --------------------
+    longitudinal_yaw = radius*math.cos(alpha - target_yaw) - body_length
+    lateral_yaw = radius*math.sin(alpha - target_yaw) - body_width
     
     
-    foot_targets[0] = target_x + foot_pose[0] - longitudinal_shift
-    foot_targets[1] = -target_y + foot_pose[1] + lateral_shift
+    foot_targets[0] = target_x + foot_pose[0] - longitudinal_pitch - longitudinal_yaw
+    foot_targets[1] = -target_y + foot_pose[1] + lateral_roll - lateral_yaw
     foot_targets[2] = target_z + foot_pose[2] - pitch_height_shift + roll_height_shift
-    foot_targets[3] = target_x + foot_pose[3] - longitudinal_shift
-    foot_targets[4] = target_y + foot_pose[4] + lateral_shift
+    foot_targets[3] = target_x + foot_pose[3] - longitudinal_pitch - longitudinal_yaw
+    foot_targets[4] = target_y + foot_pose[4] + lateral_roll + lateral_yaw
     foot_targets[5] = target_z + foot_pose[5] - pitch_height_shift - roll_height_shift
-    foot_targets[6] = target_x + foot_pose[6] + longitudinal_shift
-    foot_targets[7] = -target_y + foot_pose[7] + lateral_shift
+    foot_targets[6] = target_x + foot_pose[6] + longitudinal_pitch + longitudinal_yaw
+    foot_targets[7] = -target_y + foot_pose[7] + lateral_roll + lateral_yaw
     foot_targets[8] = target_z + foot_pose[8] + pitch_height_shift + roll_height_shift
-    foot_targets[9] = target_x + foot_pose[9] + longitudinal_shift
-    foot_targets[10] = target_y + foot_pose[10] + lateral_shift
+    foot_targets[9] = target_x + foot_pose[9] + longitudinal_pitch + longitudinal_yaw
+    foot_targets[10] = target_y + foot_pose[10] + lateral_roll - lateral_yaw
     foot_targets[11] = target_z + foot_pose[11] + pitch_height_shift - roll_height_shift
     
     for leg in range(4):
-    
         # Y offset calculation --------------------
         adjusted_z = math.sqrt(foot_targets[2 + 3*leg]**2 + foot_targets[1 + 3*leg]**2 - hip_offset**2)
         hip_angle = np.rad2deg(math.atan(foot_targets[1 + 3*leg]/foot_targets[2 + 3*leg]) + math.atan(adjusted_z/hip_offset)) - 90
-
-
+        
         # X offset calculation --------------------
         shoulder_offset = np.rad2deg(math.atan(foot_targets[0 + 3*leg]/adjusted_z))
         leg_length = math.sqrt(adjusted_z**2 + foot_targets[0 + 3*leg]**2)
-
-
+        
         # Z offset calculation --------------------
         shoulder_base_angle = np.rad2deg(math.acos((upper_leg**2 + leg_length**2 - lower_leg**2)/(2*upper_leg*leg_length)))
         wrist_angle = 180 - np.rad2deg(math.acos((lower_leg**2 + upper_leg**2 - leg_length**2)/(2*lower_leg*upper_leg)))
