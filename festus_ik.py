@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import math
 from adafruit_servokit import ServoKit
