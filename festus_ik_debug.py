@@ -3,13 +3,6 @@ import numpy as np
 import math
 from adafruit_servokit import ServoKit
 
-# Define the servo controller board and its parameters
-kit = ServoKit(channels=16)
-#kit.frequency = 50  # Hz
-for i in range(4, 16):
-    kit.servo[i].set_pulse_width_range(1000, 2000)
-    kit.servo[i].actuation_range = 120
-
 # Define the size of various system elements (in mm)
 body_length = 90  # Halfway between front to rear leg pivots
 body_width = 40  # Halfway between shoulder pivots
@@ -24,7 +17,7 @@ leg_lift_height = 80
 static_lean_margin = 0  # Distance past zero moment point to lean (mm) in order to maintain stability when lifting one leg or walking in statically stable gait
 
 # Define the servo rest offsets (the amount to adjust from 0 to make all elements point straight down)
-servo_offsets = [0, 0, 0, 0, -78, 80, -86, 86, 33, -32, 36, -36, 11, -2, -6, -5]  # 1, 2, 3, 4 peripheral; rr, rl, fr, fl wrists; rr, rl, fr, fl elbows; rr, rl, fr, fl shoulders
+servo_offsets = [0, 0, 0, 0, -60, 60, -60, 60, 0, -0, 0, -0, 0, 0, 0, 0]  # 1, 2, 3, 4 peripheral; rr, rl, fr, fl wrists; rr, rl, fr, fl elbows; rr, rl, fr, fl shoulders
 
 # Define an array to hold all of the servo values, to be written simultaneously. Populated initially with rest/default positions
 servo_positions = [90, 90, 90, 90, 0, 120, 0, 120, 60, 60, 60, 60, 60, 60, 60, 60]  # 1, 2, 3, 4 peripheral; rr, rl, fr, fl wrists; rr, rl, fr, fl elbows; rr, rl, fr, fl shoulders
@@ -146,8 +139,6 @@ def lift_leg(leg):
     
 # Write positions to servos
 def write_to_servos():
-    for i in range(16):
-        kit.servo[i].angle = servo_positions[i]
     print(servo_positions)  # Print servo angles for debugging
 
 def reset_pose():
