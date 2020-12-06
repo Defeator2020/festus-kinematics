@@ -38,21 +38,22 @@ def leg_angles(body_pose, foot_pose):
     longitudinal_shift = body_length*(1-math.cos(target_pitch))
     
     # Roll calculation --------------------
-
+    roll_height_shift = body_width*math.sin(target_roll)
+    lateral_shift = body_width*(1-math.cos(target_roll))
     
     
-    foot_targets[0] = target_x - longitudinal_shift
-    foot_targets[1] = -target_y
-    foot_targets[2] = target_z - pitch_height_shift
-    foot_targets[3] = target_x - longitudinal_shift
-    foot_targets[4] = target_y
-    foot_targets[5] = target_z - pitch_height_shift
-    foot_targets[6] = target_x + longitudinal_shift
-    foot_targets[7] = -target_y
-    foot_targets[8] = target_z + pitch_height_shift
-    foot_targets[9] = target_x + longitudinal_shift
-    foot_targets[10] = target_y
-    foot_targets[11] = target_z + pitch_height_shift
+    foot_targets[0] = target_x + foot_pose[0] - longitudinal_shift
+    foot_targets[1] = -target_y + foot_pose[1] + lateral_shift
+    foot_targets[2] = target_z + foot_pose[2] - pitch_height_shift + roll_height_shift
+    foot_targets[3] = target_x + foot_pose[3] - longitudinal_shift
+    foot_targets[4] = target_y + foot_pose[4] + lateral_shift
+    foot_targets[5] = target_z + foot_pose[5] - pitch_height_shift - roll_height_shift
+    foot_targets[6] = target_x + foot_pose[6] + longitudinal_shift
+    foot_targets[7] = -target_y + foot_pose[7] + lateral_shift
+    foot_targets[8] = target_z + foot_pose[8] + pitch_height_shift + roll_height_shift
+    foot_targets[9] = target_x + foot_pose[9] + longitudinal_shift
+    foot_targets[10] = target_y + foot_pose[10] + lateral_shift
+    foot_targets[11] = target_z + foot_pose[11] + pitch_height_shift - roll_height_shift
     
     for leg in range(4):
     
@@ -70,13 +71,13 @@ def leg_angles(body_pose, foot_pose):
         shoulder_base_angle = np.rad2deg(math.acos((upper_leg**2 + leg_length**2 - lower_leg**2)/(2*upper_leg*leg_length)))
         wrist_angle = 180 - np.rad2deg(math.acos((lower_leg**2 + upper_leg**2 - leg_length**2)/(2*lower_leg*upper_leg)))
         
-        servo_positions[12 + leg] = (hip_angle)*flip[12 + leg] + servo_offsets[12 + leg] + 60
+        servo_positions[12 + leg] = (hip_angle + ((-1)**(leg+1))*body_pose[4])*flip[12 + leg] + servo_offsets[12 + leg] + 60
         servo_positions[8 + leg] = (shoulder_base_angle + shoulder_offset + body_pose[3])*flip[8 + leg] + servo_offsets[8 + leg] + 60
         servo_positions[4 + leg] = (wrist_angle)*flip[4 + leg] + servo_offsets[4 + leg] + 60
 
 
 body_position = [0, 0, 180, 0, 0, 0]  # x, y, z (mm), pitch, roll, yaw (deg)
-foot_positions = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]  # x, y, z; rr, rl, fr, fl
+foot_positions = [0, 25, 0, 0, 25, 0, 0, 25, 0, 0, 25, 0]  # x, y, z; rr, rl, fr, fl
 leg_angles(body_position, foot_positions)
 
 # Write positions to servos
