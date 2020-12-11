@@ -77,6 +77,7 @@ def leg_angles(body_pose, foot_pose):
     foot_targets[9] = target_x - foot_pose[9] + longitudinal_pitch + longitudinal_yaw
     foot_targets[10] = target_y - foot_pose[10] + lateral_roll - lateral_yaw
     foot_targets[11] = target_z - foot_pose[11] + pitch_height_shift - roll_height_shift
+    
     for leg in range(4):
         # Y offset calculation --------------------
         adjusted_z = math.sqrt(foot_targets[2 + 3*leg]**2 + foot_targets[1 + 3*leg]**2 - hip_offset**2)
@@ -107,7 +108,7 @@ def reset_pose():
     # Set rest position and orientation for chassis and feet
     body_position = rest_body_position
     foot_positions = rest_foot_positions
-    move(body_position, foot_positions)
+    move(rest_body_position, rest_foot_positions)
     
 def lift_leg(leg):
     global body_position
@@ -132,10 +133,8 @@ def move(body, feet):
     leg_angles(body, feet)
     write_to_servos()
 
-reset_pose()
-time.sleep(1)
-
 move(lay_body_position, lay_foot_positions)
+time.sleep(1)
 """
 lift_leg(0)
 time.sleep(1)
