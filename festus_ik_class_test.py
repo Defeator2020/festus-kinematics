@@ -143,3 +143,8 @@ def move():
 body.position = [0, 0, 190, 0, 0, 0]
 feet.position = [0, 10, 0, 0, -10, 0, 0, 10, 0, 0, -10, 0]
 move()
+time.sleep(1)
+
+body.position = body.lay_position
+feet.position = feet.lay_position
+move()
