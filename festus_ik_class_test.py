@@ -10,7 +10,7 @@ for i in range(4, 16):
     kit.servo[i].actuation_range = 120
 
 class Body:
-    # Define the size of various system elements (in mm)
+    # Define the size of various system elements (mm)
     length = 90  # Halfway between front to rear leg pivots
     width = 40  # Halfway between hip pivots
     hip_offset = 56
@@ -18,12 +18,6 @@ class Body:
     lower_leg = 133
     radius = math.sqrt(length**2 + width**2)  # Distance from center of body to shoulder (mm)
     alpha = math.atan(width/length)  # Existing angle between +x-axis and radius line about center of body (rad)
-    
-    # Define various gait parameters
-    cg_x_offset = -10  # Forward of center
-    cg_y_offset = -10  # Right of center
-    leg_lift_height = 50
-    static_lean_margin = 25  # Distance past zero moment point to lean (mm) in order to maintain stability when lifting one leg or walking in statically stable gait
     
     # Define some useful positions
     rest_position = [0, 0, 190, 0, 0, 0]  # x, y, z (mm), pitch, roll, yaw (deg)
@@ -45,17 +39,30 @@ class Servos:
     positions = [90, 90, 90, 90, 76, 45, 72, 48, 33, 87, 37, 83, 89, 40, 36, 73]
     flip = [1, 1, 1, 1, 1, -1, 1, -1, -1, 1, -1, 1, -1, 1, 1, -1]
 
+class Stride:
+    # Define various gait parameters (mm)
+    cg_x_offset = -10  # Forward of center
+    cg_y_offset = -10  # Right of center
+    stride_length = 25  # Midpoint to either extreme of step
+    stride_height = 30
+    longitudinal_shift = 10  # Distance that step centerpoint is slid forward
+    static_lean_margin = 25  # Distance past zero moment point to lean in order to maintain stability when lifting one leg or walking in statically stable gait
+    
+    # Bezier curves
+    p1 = [-stride_length + longitudinal_shift,0]
+    p2 = [-stride_length/2 + longitudinal_shift,stride_height/2]
+    p3 = [stride_length + longitudinal_shift,stride_height]
+    p4 = [stride_length + longitudinal_shift,0]
+
 
 # Instantiate various objects
 body = Body()
 feet = Feet()
 servos = Servos()
-
+stride = Stride()
 
 # KINEMATIC CALCULATIONS
 def leg_angles():
-    foot_pose = feet.position
-    
     target_x = body.position[0]  # Body lean forward
     target_y = body.position[1]  # Body lean right
     target_z = body.position[2]  # Body get taller
@@ -118,33 +125,47 @@ def reset_pose():
     body.position = body.rest_position
     feet.position = feet.rest_position
     move()
-    
-def lift_leg(leg):
-    body.position[0] = -body.cg_x_offset
-    
-    if leg == 0 or leg == 2:
-        body.position[1] -= (body.static_lean_margin + body.cg_y_offset)
-    elif leg == 1 or leg == 3:
-        body.position[1] += (body.static_lean_margin - body.cg_y_offset)
-    
+
+def prep_walk():
+    body.position = [0, 0, 190, 0, 0, 0]
+    feet.position = [stride.p1, 10, 0, stride.p4, -10, 0, stride.p1, 10, 0, stride.p4, -10, 0]
     move()
-    time.sleep(.2)
-    
-    feet.position[0 + 3*leg] += 0
-    feet.position[1 + 3*leg] += 0
-    feet.position[2 + 3*leg] += body.leg_lift_height
-    move()
+
+def walk():
+    increments = 20
+    slide_increment = [(stride.p4[0] - stride.p1[0] - 3*stride.p2[0])/increments, (stride.p4[1] - stride.p1[1] - 3*stride.p2[1])/increments]
+    feet_set = (0, 3, 1, 2)  # Determines which feet are lifting and which are sliding (lift, lift, slide, slide)
+    for j in range (2):
+        if j == 1:
+            feet_set = [1, 2, 0, 3]
+        
+        for i in range(increments):
+            t = (i/(increments - 1))  # Point along curve, from 0 to 1
+        
+            # Move the feet that are lifting this cycle
+            feet.position[0 + 3*feet_set[0]] = stride.p1[0]*(1-t)**3 + 3*stride.p2[0]*(1-t)**2 + 3*stride.p3[0]*(1-t)*t**2 + stride.p4[0]*t**3
+            feet.position[2 + 3*feet_set[0]] = stride.p1[1]*(1-t)**3 + 3*stride.p2[1]*(1-t)**2 + 3*stride.p3[1]*(1-t)*t**2 + stride.p4[1]*t**3
+            feet.position[0 + 3*feet_set[1]] = stride.p1[0]*(1-t)**3 + 3*stride.p2[0]*(1-t)**2 + 3*stride.p3[0]*(1-t)*t**2 + stride.p4[0]*t**3
+            feet.position[2 + 3*feet_set[1]] = stride.p1[1]*(1-t)**3 + 3*stride.p2[1]*(1-t)**2 + 3*stride.p3[1]*(1-t)*t**2 + stride.p4[1]*t**3
+        
+            # Move the feet that are sliding this cycle
+            feet.position[0 + 3*feet_set[2]] -= slide_increment[0]
+            feet.position[2 + 3*feet_set[2]] = 0
+            feet.position[0 + 3*feet_set[3]] -= slide_increment[0]
+            feet.position[2 + 3*feet_set[3]] = 0
+            
+            move()
+            time.sleep(.0125)
 
 def move():
     leg_angles()
     write_to_servos()
-
 
 body.position = [0, 0, 190, 0, 0, 0]
 feet.position = [0, 10, 0, 0, -10, 0, 0, 10, 0, 0, -10, 0]
 move()
 time.sleep(1)
 
-body.position = body.lay_position
-feet.position = feet.lay_position
-move()
+while True:
+    walk()
+    time.sleep(1)
