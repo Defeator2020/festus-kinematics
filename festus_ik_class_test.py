@@ -41,17 +41,17 @@ class Servos:
 
 class Stride:
     # Define various gait parameters (mm)
-    cg_x_offset = -10  # Forward of center
+    cg_x_offset = -20  # Forward of center
     cg_y_offset = -10  # Right of center
-    stride_length = 25  # Midpoint to either extreme of step
+    stride_length = 30  # Midpoint to either extreme of step
     stride_height = 30
-    longitudinal_shift = 10  # Distance that step centerpoint is slid forward
+    longitudinal_shift = 15  # Distance that step centerpoint is slid forward
     static_lean_margin = 25  # Distance past zero moment point to lean in order to maintain stability when lifting one leg or walking in statically stable gait
     
     # Bezier curves
     p1 = [-stride_length + longitudinal_shift,0]
     p2 = [-stride_length/2 + longitudinal_shift,stride_height/2]
-    p3 = [stride_length + longitudinal_shift,stride_height]
+    p3 = [1.3*stride_length + longitudinal_shift,1.3*stride_height]
     p4 = [stride_length + longitudinal_shift,0]
 
 
@@ -131,13 +131,48 @@ def prep_walk():
     feet.position = [stride.p1, 10, 0, stride.p4, -10, 0, stride.p1, 10, 0, stride.p4, -10, 0]
     move()
 
-def walk():
+def walk_1():
     increments = 20
-    slide_increment = [(stride.p4[0] - stride.p1[0] - 3*stride.p2[0])/increments, (stride.p4[1] - stride.p1[1] - 3*stride.p2[1])/increments]
-    feet_set = (0, 3, 1, 2)  # Determines which feet are lifting and which are sliding (lift, lift, slide, slide)
-    for j in range (2):
+    slide_increment = (stride.p4[0] - stride.p1[0] - 3*stride.p2[0])/(increments*3)
+    feet_set = (0, 1, 2, 3)  # Determines which feet are lifting and which are sliding (lift, lift, slide, slide)
+    for j in range(4):
         if j == 1:
-            feet_set = [1, 2, 0, 3]
+            feet_set = (2, 0, 1, 3)
+        elif j == 2:
+            feet_set = (1, 0, 2, 3)
+        elif j == 3:
+            feet_set = (3, 0, 1, 2)
+        
+        for i in range(increments):
+            t = (i/(increments - 1))  # Point along curve, from 0 to 1
+            
+            if j<2:
+                body.position[1] = -stride.static_lean_margin - stride.cg_y_offset
+            else:
+                body.position[1] = stride.static_lean_margin - stride.cg_y_offset
+                
+            # Move the feet that are lifting this cycle
+            feet.position[0 + 3*feet_set[0]] = stride.p1[0]*(1-t)**3 + 3*stride.p2[0]*(1-t)**2 + 3*stride.p3[0]*(1-t)*t**2 + stride.p4[0]*t**3
+            feet.position[2 + 3*feet_set[0]] = stride.p1[1]*(1-t)**3 + 3*stride.p2[1]*(1-t)**2 + 3*stride.p3[1]*(1-t)*t**2 + stride.p4[1]*t**3
+        
+            # Move the feet that are sliding this cycle
+            feet.position[0 + 3*feet_set[1]] -= slide_increment
+            feet.position[2 + 3*feet_set[1]] = 0
+            feet.position[0 + 3*feet_set[2]] -= slide_increment
+            feet.position[2 + 3*feet_set[2]] = 0
+            feet.position[0 + 3*feet_set[3]] -= slide_increment
+            feet.position[2 + 3*feet_set[3]] = 0
+            
+            move()
+            time.sleep(.00625)
+
+def walk_2():
+    increments = 20
+    slide_increment = (stride.p4[0] - stride.p1[0] - 3*stride.p2[0])/increments
+    feet_set = (0, 3, 1, 2)  # Determines which feet are lifting and which are sliding (lift, lift, slide, slide)
+    for j in range(2):
+        if j == 1:
+            feet_set = (1, 2, 0, 3)
         
         for i in range(increments):
             t = (i/(increments - 1))  # Point along curve, from 0 to 1
@@ -149,9 +184,9 @@ def walk():
             feet.position[2 + 3*feet_set[1]] = stride.p1[1]*(1-t)**3 + 3*stride.p2[1]*(1-t)**2 + 3*stride.p3[1]*(1-t)*t**2 + stride.p4[1]*t**3
         
             # Move the feet that are sliding this cycle
-            feet.position[0 + 3*feet_set[2]] -= slide_increment[0]
+            feet.position[0 + 3*feet_set[2]] -= slide_increment
             feet.position[2 + 3*feet_set[2]] = 0
-            feet.position[0 + 3*feet_set[3]] -= slide_increment[0]
+            feet.position[0 + 3*feet_set[3]] -= slide_increment
             feet.position[2 + 3*feet_set[3]] = 0
             
             move()
@@ -161,11 +196,11 @@ def move():
     leg_angles()
     write_to_servos()
 
-body.position = [0, 0, 190, 0, 0, 0]
+body.position = [-stride.cg_x_offset, -stride.cg_y_offset, 190, 0, 0, 0]
 feet.position = [0, 10, 0, 0, -10, 0, 0, 10, 0, 0, -10, 0]
 move()
 time.sleep(1)
 
 while True:
-    walk()
-    time.sleep(1)
+    walk_1()
+    #time.sleep(1)
