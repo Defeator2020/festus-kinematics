@@ -1,7 +1,10 @@
 import time
 import numpy as np
 import math
+import signal
 from adafruit_servokit import ServoKit
+from xbox360controller import Xbox360Controller
+import I2C_LCD_driver
 
 # Define the servo controller board and its parameters
 kit = ServoKit(channels=16)
@@ -27,7 +30,7 @@ class Body:
 
 
 class Feet:
-    rest_position = [0, 56, 0, 0, -56, 0, 0, 56, 0, 0, -56, 0]  # x, y, z; rr, rl, fr, fl
+    rest_position = [0, 15, 0, 0, -15, 0, 0, 15, 0, 0, -15, 0]  # x, y, z; rr, rl, fr, fl
     #rest_position = [0, 10, 0, 0, -10, 0, 0, 10, 0, 0, -10, 0]  # x, y, z; rr, rl, fr, fl
     lay_position = [0, 15, 0, 0, -15, 0, 0, 15, 0, 0, -15, 0]  # x, y, z; rr, rl, fr, fl
     
@@ -44,16 +47,16 @@ class Stride:
     # Define various gait parameters (mm)
     cg_x_offset = -20  # Forward of center
     cg_y_offset = -10  # Right of center
-    stride_length = 0  # Midpoint to either extreme of step
-    stride_height = 35
+    length = 0  # Midpoint to either extreme of step
+    height = 35
     longitudinal_shift = 0  # How far forward the feet are shifted during steps
     static_lean_margin = 50  # Distance past zero moment point to lean in order to maintain stability when lifting one leg or walking in statically stable gait
     
     # Bezier curves
-    p1 = [-stride_length + longitudinal_shift,0]
-    p2 = [-stride_length/2 + longitudinal_shift,stride_height/2]
-    p3 = [1.3*stride_length + longitudinal_shift,1.3*stride_height]
-    p4 = [stride_length + longitudinal_shift,0]
+    p1 = [-length + longitudinal_shift,0]
+    p2 = [-length/2 + longitudinal_shift, height/2]
+    p3 = [1.3*length + longitudinal_shift,1.3*height]
+    p4 = [length + longitudinal_shift,0]
 
 
 # Instantiate various objects
@@ -61,6 +64,17 @@ body = Body()
 feet = Feet()
 servos = Servos()
 stride = Stride()
+mylcd = I2C_LCD_driver.lcd()
+
+mylcd.backlight(1)
+mylcd.lcd_display_string("Initializing", 1, 0) # Add dots animation (ellipses) after this while the IMU is initializing
+time.sleep(1)
+for i in range(4):
+    mylcd.lcd_display_string(".", 1, 12 + i)
+    time.sleep(1)
+mylcd.lcd_clear()
+mylcd.lcd_display_string("System", 1, 5)
+mylcd.lcd_display_string("Online", 2, 5)
 
 # KINEMATIC CALCULATIONS
 def leg_angles():
@@ -128,7 +142,103 @@ def reset_pose():
     move()
 
 def move():
-    leg_angles()
-    write_to_servos()
+    try:
+        leg_angles()
+    except:
+        print("Math domain error!")
+    
+    try:
+        write_to_servos()
+    except:
+        print("Angle out of range!")
 
-reset.pose()
+# Testing function 1 - lift a specific leg
+def lift_leg(leg):
+    increments = 25
+    lift_increments = (stride.height - feet.position[2 + 3*leg])/25
+    
+    for i in range(increments):
+        feet.position[2 + 3*leg] += lift_increments
+        move()
+        
+    for i in range(increments):
+        feet.position[2 + 3*leg] -= lift_increments
+        move()
+
+def on_button_pressed(button):
+    print('Button {0} was pressed'.format(button.name))
+    if button.name == "button_y":
+        body.position = body.rest_position
+        feet.position = feet.rest_position
+    
+    if button.name == "button_trigger_l":
+        body.position[5] -= 5
+    
+    if button.name == "button_trigger_r":
+        body.position[5] += 5
+    
+    move()
+
+def on_button_released(button):
+    print('Button {0} was released'.format(button.name))
+
+
+def on_axis_moved(axis):
+    print('Axis {0} moved to {1} {2}'.format(axis.name, axis.x, axis.y))
+    if axis.name == "axis_l":
+        body.position[0] = -axis.y * 75
+        body.position[1] = axis.x * 75
+    
+    if axis.name == "axis_r":
+        body.position[3] = axis.y * 50
+        body.position[4] = -axis.x * 50
+    
+    if axis.name == "hat":
+        if axis.x == 1:
+            lift_leg(2)
+        elif axis.x == -1:
+            lift_leg(1)
+        elif axis.y == 1:
+            lift_leg(3)
+        elif axis.y == -1:
+            lift_leg(0)
+    move()
+
+# Startup stuff
+reset_pose()
+with Xbox360Controller() as controller:
+    controller.set_led(Xbox360Controller.LED_BLINK_SLOW)
+
+try:
+    with Xbox360Controller(0, axis_threshold=0) as controller:
+        # Button events
+        controller.button_a.when_pressed = on_button_pressed
+        controller.button_y.when_pressed = on_button_pressed
+        controller.button_trigger_l.when_pressed = on_button_pressed
+        controller.button_trigger_r.when_pressed = on_button_pressed
+        
+        controller.button_a.when_released = on_button_released
+        controller.button_y.when_released = on_button_released
+        controller.button_trigger_l.when_released = on_button_released
+        controller.button_trigger_r.when_released = on_button_released
+
+        # Axis move event
+        controller.axis_l.when_moved = on_axis_moved
+        controller.axis_r.when_moved = on_axis_moved
+        controller.hat.when_moved = on_axis_moved
+        
+        signal.pause()
+
+except KeyboardInterrupt:
+    reset_pose()
+    
+    with Xbox360Controller() as controller:
+        controller.set_led(Xbox360Controller.LED_TOP_LEFT_ON)
+    
+    mylcd.lcd_clear()
+    mylcd.lcd_display_string("Shutting", 1, 4)
+    mylcd.lcd_display_string("Down", 2, 6)
+    time.sleep(1)
+    mylcd.lcd_clear()
+    mylcd.backlight(0)
+    pass
