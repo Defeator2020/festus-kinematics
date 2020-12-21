@@ -50,6 +50,7 @@ class Stride:
     length = 30  # Distance from midpoint to either extreme of step
     height = 30  # Distance from ground to highest control point of Bezier curve
     lateral_margin = 40  # How close to one side the chassis leans during a step
+    steer = 0  # Target angle to walk at (clockwise from forward=0) (deg)
 
 
 # Instantiate various objects
@@ -190,15 +191,19 @@ def gait_single():  # Make this use less code, just so ugly right now for the sa
             t = (j/(step_increments - 1))  # Point along curve, from 0 to 1
         
             # Move the foot that is lifting this cycle (Bezier curves)
-            feet.position[0 + 3*feet_set[0]] = -length*(1-t)**3 + 3*(-length/2)*(1-t)**2 + 6*length*(1-t)*t**2 + length*t**3
-            feet.position[2 + 3*feet_set[0]] = ((9*height)/4)*(1-t)**2 + 3*height*(1-t)*t**2
+            feet.position[0 + 3*feet_set[0]] = (-stride.length*(1-t)**3 + 3*(-stride.length/2)*(1-t)**2 + 6*stride.length*(1-t)*t**2 + stride.length*t**3)#*math.cos(stride.steer)
+            #feet.position[1 + 3*feet_set[0]] = (-stride.length*(1-t)**3 + 3*(-stride.length/2)*(1-t)**2 + 6*stride.length*(1-t)*t**2 + stride.length*t**3)*math.sin(stride.steer)
+            feet.position[2 + 3*feet_set[0]] = ((9*stride.height)/4)*(1-t)**2 + 3*stride.height*(1-t)*t**2
 
             # Move the feet that are sliding this cycle
-            feet.position[0 + 3*feet_set[1]] -= slide_increment
+            feet.position[0 + 3*feet_set[1]] -= slide_increment#*math.cos(stride.steer)
+            #feet.position[1 + 3*feet_set[1]] -= slide_increment*math.sin(stride.steer)
             feet.position[2 + 3*feet_set[1]] = 0
-            feet.position[0 + 3*feet_set[2]] -= slide_increment
+            feet.position[0 + 3*feet_set[1]] -= slide_increment#*math.cos(stride.steer)
+            #feet.position[1 + 3*feet_set[1]] -= slide_increment*math.sin(stride.steer)
             feet.position[2 + 3*feet_set[2]] = 0
-            feet.position[0 + 3*feet_set[3]] -= slide_increment
+            feet.position[0 + 3*feet_set[1]] -= slide_increment#*math.cos(stride.steer)
+            #feet.position[1 + 3*feet_set[1]] -= slide_increment*math.sin(stride.steer)
             feet.position[2 + 3*feet_set[3]] = 0
 
             move()
@@ -219,23 +224,13 @@ def gait_gallop():
 # Startup stuff
 feet.position = feet.walk_position
 move()
-
-# \/ THIS NEEDS TO BE IN A STARTUP SCRIPT FOR WHEN THE ROBOT TURNS ON \/ (but maybe that's just this script anyway)
-"""
-# Startup stuff
-kit.servo[8].angle = 0
-kit.servo[9].angle = 120
-kit.servo[10].angle = 0
-kit.servo[11].angle = 120
-time.sleep(2)
-reset_pose()
-"""
+stride.steer = 0
 
 # Main loop
-while True:
-    gait_single()
+try:
+    while True:
+        gait_single()
 
-"""
 except KeyboardInterrupt:
     reset_pose()
     
@@ -247,4 +242,3 @@ except KeyboardInterrupt:
     mylcd.backlight(0)
     
     pass
-"""

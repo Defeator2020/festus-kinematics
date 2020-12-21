@@ -218,24 +218,15 @@ def gait_gallop():
 
 def on_axis_moved(axis):
     print('Axis {0} moved to {1} {2}'.format(axis.name, axis.x, axis.y))
+    x = 0
+    y = 0
     if axis.name == "axis_l":
-        body.position[0] = -axis.y * 75
-        body.position[1] = axis.x * 75
-    
-    if axis.name == "axis_r":
-        body.position[3] = axis.y * 50
-        body.position[4] = -axis.x * 50
-    
-    if axis.name == "hat":
-        if axis.x == 1:
-            lift_leg(2)
-        elif axis.x == -1:
-            lift_leg(1)
-        elif axis.y == 1:
-            lift_leg(3)
-        elif axis.y == -1:
-            lift_leg(0)
-    move()
+        if abs(axis.x) > 0.1:
+            return
+        
+        if abs(axis.y) > 0.1:
+            return
+
 
 # Startup stuff
 feet.position = feet.walk_position
@@ -245,7 +236,7 @@ with Xbox360Controller() as controller:
 
 # Main bit
 try:
-    with Xbox360Controller(0, axis_threshold=0) as controller:
+    with Xbox360Controller(0, axis_threshold=0.0) as controller:
         # Button events
         controller.button_a.when_pressed = on_button_pressed
         controller.button_y.when_pressed = on_button_pressed
