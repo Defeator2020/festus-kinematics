@@ -57,7 +57,7 @@ class Stride:
     # Bezier curves
     p1 = [longitudinal_shift - length, 0]
     p2 = [longitudinal_shift - length/2, (3*height)/4]
-    p3 = [length + longitudinal_shift, height]
+    p3 = [length*2 + longitudinal_shift, height]
     p4 = [length + longitudinal_shift, 0]
 
 
@@ -164,8 +164,8 @@ def move():
 # 4. 'gallop' (pretty sure this is unstable) -> front right & left, back right & left
 
 def gait_single():  # Make this use less code, just so ugly right now for the sake of rapid testing and modification
-    lean_increments = 45
-    step_increments = 45
+    lean_increments = 25
+    step_increments = 25
     slide_increment = stride.length/step_increments
     
     for i in range(4):
