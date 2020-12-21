@@ -168,97 +168,49 @@ def gait_single():  # Make this use less code, just so ugly right now for the sa
     step_increments = 45
     slide_increment = stride.length/step_increments
     
-    # lean phase
-    lean_step = (feet.position[1] + body.width - stride.lateral_margin - body.position[1] - stride.cg_x_offset)/lean_increments
-    for i in range(lean_increments):
-        body.position[1] += lean_step
-        move()
-    
-    feet_set = (1, 2, 3, 0)  # Determines which foot is lifting and which are sliding (lift, slide, slide, slide)
-    
-    # leg move phase
-    for i in range(step_increments):
-        t = (i/(step_increments - 1))  # Point along curve, from 0 to 1
+    for i in range(4):
         
-        # Move the foot that is lifting this cycle
-        feet.position[0 + 3*feet_set[0]] = stride.p1[0]*(1-t)**3 + 3*stride.p2[0]*(1-t)**2 + 3*stride.p3[0]*(1-t)*t**2 + stride.p4[0]*t**3
-        feet.position[2 + 3*feet_set[0]] = stride.p1[1]*(1-t)**3 + 3*stride.p2[1]*(1-t)**2 + 3*stride.p3[1]*(1-t)*t**2 + stride.p4[1]*t**3
+        if i == 0:
+            feet_set = (1, 2, 3, 0)  # Determines which foot is lifting and which are sliding (lift, slide, slide, slide)
+            
+            # lean phase
+            lean_step = (feet.position[1] + body.width - stride.lateral_margin - body.position[1] - stride.cg_x_offset)/lean_increments
+            for i in range(lean_increments):
+                body.position[1] += lean_step
+                move()
 
-        # Move the feet that are sliding this cycle
-        feet.position[0 + 3*feet_set[1]] -= slide_increment
-        feet.position[2 + 3*feet_set[1]] = 0
-        feet.position[0 + 3*feet_set[2]] -= slide_increment
-        feet.position[2 + 3*feet_set[2]] = 0
-        feet.position[0 + 3*feet_set[3]] -= slide_increment
-        feet.position[2 + 3*feet_set[3]] = 0
+        if i == 1:
+            feet_set = (3, 0, 1, 2)
 
-        move()
-    
-    feet_set = (3, 0, 1, 2)
-    
-    # leg move phase
-    for i in range(step_increments):
-        t = (i/(step_increments - 1))  # Point along curve, from 0 to 1
+        if i == 2:
+            feet_set = (0, 1, 2, 3)
         
-        # Move the foot that is lifting this cycle
-        feet.position[0 + 3*feet_set[0]] = stride.p1[0]*(1-t)**3 + 3*stride.p2[0]*(1-t)**2 + 3*stride.p3[0]*(1-t)*t**2 + stride.p4[0]*t**3
-        feet.position[2 + 3*feet_set[0]] = stride.p1[1]*(1-t)**3 + 3*stride.p2[1]*(1-t)**2 + 3*stride.p3[1]*(1-t)*t**2 + stride.p4[1]*t**3
-
-        # Move the feet that are sliding this cycle
-        feet.position[0 + 3*feet_set[1]] -= slide_increment
-        feet.position[2 + 3*feet_set[1]] = 0
-        feet.position[0 + 3*feet_set[2]] -= slide_increment
-        feet.position[2 + 3*feet_set[2]] = 0
-        feet.position[0 + 3*feet_set[3]] -= slide_increment
-        feet.position[2 + 3*feet_set[3]] = 0
-
-        move()
-    
-    # lean phase
-    lean_step = (feet.position[4] - body.width + stride.lateral_margin - body.position[1] - stride.cg_x_offset)/lean_increments
-    for i in range(lean_increments):
-        body.position[1] += lean_step
-        move()
-    
-    feet_set = (0, 1, 2, 3)
-    
-    # leg move phase
-    for i in range(step_increments):
-        t = (i/(step_increments - 1))  # Point along curve, from 0 to 1
+            # lean phase
+            lean_step = (feet.position[4] - body.width + stride.lateral_margin - body.position[1] - stride.cg_x_offset)/lean_increments
+            for i in range(lean_increments):
+                body.position[1] += lean_step
+                move()
         
-        # Move the foot that is lifting this cycle
-        feet.position[0 + 3*feet_set[0]] = stride.p1[0]*(1-t)**3 + 3*stride.p2[0]*(1-t)**2 + 3*stride.p3[0]*(1-t)*t**2 + stride.p4[0]*t**3
-        feet.position[2 + 3*feet_set[0]] = stride.p1[1]*(1-t)**3 + 3*stride.p2[1]*(1-t)**2 + 3*stride.p3[1]*(1-t)*t**2 + stride.p4[1]*t**3
-
-        # Move the feet that are sliding this cycle
-        feet.position[0 + 3*feet_set[1]] -= slide_increment
-        feet.position[2 + 3*feet_set[1]] = 0
-        feet.position[0 + 3*feet_set[2]] -= slide_increment
-        feet.position[2 + 3*feet_set[2]] = 0
-        feet.position[0 + 3*feet_set[3]] -= slide_increment
-        feet.position[2 + 3*feet_set[3]] = 0
-
-        move()
-    
-    feet_set = (2, 3, 0, 1)
-    
-    # leg move phase
-    for i in range(step_increments):
-        t = (i/(step_increments - 1))  # Point along curve, from 0 to 1
+        if i == 3:
+            feet_set = (2, 3, 0, 1)
         
-        # Move the foot that is lifting this cycle
-        feet.position[0 + 3*feet_set[0]] = stride.p1[0]*(1-t)**3 + 3*stride.p2[0]*(1-t)**2 + 3*stride.p3[0]*(1-t)*t**2 + stride.p4[0]*t**3
-        feet.position[2 + 3*feet_set[0]] = stride.p1[1]*(1-t)**3 + 3*stride.p2[1]*(1-t)**2 + 3*stride.p3[1]*(1-t)*t**2 + stride.p4[1]*t**3
+        # leg move phase
+        for j in range(step_increments):
+            t = (j/(step_increments - 1))  # Point along curve, from 0 to 1
+        
+            # Move the foot that is lifting this cycle
+            feet.position[0 + 3*feet_set[0]] = stride.p1[0]*(1-t)**3 + 3*stride.p2[0]*(1-t)**2 + 3*stride.p3[0]*(1-t)*t**2 + stride.p4[0]*t**3
+            feet.position[2 + 3*feet_set[0]] = stride.p1[1]*(1-t)**3 + 3*stride.p2[1]*(1-t)**2 + 3*stride.p3[1]*(1-t)*t**2 + stride.p4[1]*t**3
 
-        # Move the feet that are sliding this cycle
-        feet.position[0 + 3*feet_set[1]] -= slide_increment
-        feet.position[2 + 3*feet_set[1]] = 0
-        feet.position[0 + 3*feet_set[2]] -= slide_increment
-        feet.position[2 + 3*feet_set[2]] = 0
-        feet.position[0 + 3*feet_set[3]] -= slide_increment
-        feet.position[2 + 3*feet_set[3]] = 0
+            # Move the feet that are sliding this cycle
+            feet.position[0 + 3*feet_set[1]] -= slide_increment
+            feet.position[2 + 3*feet_set[1]] = 0
+            feet.position[0 + 3*feet_set[2]] -= slide_increment
+            feet.position[2 + 3*feet_set[2]] = 0
+            feet.position[0 + 3*feet_set[3]] -= slide_increment
+            feet.position[2 + 3*feet_set[3]] = 0
 
-        move()
+            move()
 
 
 def gait_double():
