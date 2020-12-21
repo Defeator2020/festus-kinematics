@@ -33,6 +33,8 @@ class Feet:
     #rest_position = [0, 10, 0, 0, -10, 0, 0, 10, 0, 0, -10, 0]  # x, y, z; rr, rl, fr, fl
     lay_position = [0, 15, 0, 0, -15, 0, 0, 15, 0, 0, -15, 0]  # x, y, z; rr, rl, fr, fl
     
+    walk_position = [0, 40, 0, 0, -40, 0, 0, 40, 0, 0, -40, 0]  # DEBUG
+    
     position = rest_position
 
 
@@ -44,18 +46,19 @@ class Servos:
 
 class Stride:
     # Define various gait parameters (mm)
-    cg_x_offset = -20  # Forward of center
+    cg_x_offset = -10  # Forward of center
     cg_y_offset = -10  # Right of center
-    length = 0  # Midpoint to either extreme of step
-    height = 35
-    longitudinal_shift = 0  # How far forward the feet are shifted during steps
-    static_lean_margin = 50  # Distance past zero moment point to lean in order to maintain stability when lifting one leg or walking in statically stable gait
+    length = 30  # Distance from midpoint to either extreme of step
+    height = 30  # Distance from ground to highest control point of Bezier curve
+    longitudinal_shift = 0  # How far forward the feet step is shifted (probably not necessary)
+    lateral_margin = 40  # How close to one side the chassis leans during a step
+    
     
     # Bezier curves
-    p1 = [-length + longitudinal_shift,0]
-    p2 = [-length/2 + longitudinal_shift, height/2]
-    p3 = [1.3*length + longitudinal_shift,1.3*height]
-    p4 = [length + longitudinal_shift,0]
+    p1 = [longitudinal_shift - length, 0]
+    p2 = [longitudinal_shift - length/2, (3*height)/4]
+    p3 = [length + longitudinal_shift, height]
+    p4 = [length + longitudinal_shift, 0]
 
 
 # Instantiate various objects
@@ -134,12 +137,14 @@ def write_to_servos():
     for i in range(16):
         kit.servo[i].angle = servos.positions[i]
 
+# Move to default (rest) position, as defined above
 def reset_pose():
     # Set rest position and orientation for chassis and feet
     body.position = body.rest_position
     feet.position = feet.rest_position
     move()
 
+# Calculate the servo angles and write them to the servos, checking for errors
 def move():
     try:
         leg_angles()
@@ -151,13 +156,143 @@ def move():
     except:
         print("Angle out of range!")
 
+
+# Manage the synchronized movement of all four legs for various gaits --------------------
+# 1. single-leg (statically stable) -> back right, front right, back left, front left
+# 2. opposite-leg pairs (dynamically stable) -> front right & back left, front left & back right
+# 3. 'waddle' (not all that stable) -> front & back right, front & back left
+# 4. 'gallop' (pretty sure this is unstable) -> front right & left, back right & left
+
+def gait_single():  # Make this use less code, just so ugly right now for the sake of rapid testing and modification
+    lean_increments = 45
+    step_increments = 45
+    slide_increment = stride.length/step_increments
+    
+    # lean phase
+    lean_step = (feet.position[1] + body.width - stride.lateral_margin - body.position[1] - stride.cg_x_offset)/lean_increments
+    for i in range(lean_increments):
+        body.position[1] += lean_step
+        move()
+    
+    feet_set = (1, 2, 3, 0)  # Determines which foot is lifting and which are sliding (lift, slide, slide, slide)
+    
+    # leg move phase
+    for i in range(step_increments):
+        t = (i/(step_increments - 1))  # Point along curve, from 0 to 1
+        
+        # Move the foot that is lifting this cycle
+        feet.position[0 + 3*feet_set[0]] = stride.p1[0]*(1-t)**3 + 3*stride.p2[0]*(1-t)**2 + 3*stride.p3[0]*(1-t)*t**2 + stride.p4[0]*t**3
+        feet.position[2 + 3*feet_set[0]] = stride.p1[1]*(1-t)**3 + 3*stride.p2[1]*(1-t)**2 + 3*stride.p3[1]*(1-t)*t**2 + stride.p4[1]*t**3
+
+        # Move the feet that are sliding this cycle
+        feet.position[0 + 3*feet_set[1]] -= slide_increment
+        feet.position[2 + 3*feet_set[1]] = 0
+        feet.position[0 + 3*feet_set[2]] -= slide_increment
+        feet.position[2 + 3*feet_set[2]] = 0
+        feet.position[0 + 3*feet_set[3]] -= slide_increment
+        feet.position[2 + 3*feet_set[3]] = 0
+
+        move()
+    
+    feet_set = (3, 0, 1, 2)
+    
+    # leg move phase
+    for i in range(step_increments):
+        t = (i/(step_increments - 1))  # Point along curve, from 0 to 1
+        
+        # Move the foot that is lifting this cycle
+        feet.position[0 + 3*feet_set[0]] = stride.p1[0]*(1-t)**3 + 3*stride.p2[0]*(1-t)**2 + 3*stride.p3[0]*(1-t)*t**2 + stride.p4[0]*t**3
+        feet.position[2 + 3*feet_set[0]] = stride.p1[1]*(1-t)**3 + 3*stride.p2[1]*(1-t)**2 + 3*stride.p3[1]*(1-t)*t**2 + stride.p4[1]*t**3
+
+        # Move the feet that are sliding this cycle
+        feet.position[0 + 3*feet_set[1]] -= slide_increment
+        feet.position[2 + 3*feet_set[1]] = 0
+        feet.position[0 + 3*feet_set[2]] -= slide_increment
+        feet.position[2 + 3*feet_set[2]] = 0
+        feet.position[0 + 3*feet_set[3]] -= slide_increment
+        feet.position[2 + 3*feet_set[3]] = 0
+
+        move()
+    
+    # lean phase
+    lean_step = (feet.position[4] - body.width + stride.lateral_margin - body.position[1] - stride.cg_x_offset)/lean_increments
+    for i in range(lean_increments):
+        body.position[1] += lean_step
+        move()
+    
+    feet_set = (0, 1, 2, 3)
+    
+    # leg move phase
+    for i in range(step_increments):
+        t = (i/(step_increments - 1))  # Point along curve, from 0 to 1
+        
+        # Move the foot that is lifting this cycle
+        feet.position[0 + 3*feet_set[0]] = stride.p1[0]*(1-t)**3 + 3*stride.p2[0]*(1-t)**2 + 3*stride.p3[0]*(1-t)*t**2 + stride.p4[0]*t**3
+        feet.position[2 + 3*feet_set[0]] = stride.p1[1]*(1-t)**3 + 3*stride.p2[1]*(1-t)**2 + 3*stride.p3[1]*(1-t)*t**2 + stride.p4[1]*t**3
+
+        # Move the feet that are sliding this cycle
+        feet.position[0 + 3*feet_set[1]] -= slide_increment
+        feet.position[2 + 3*feet_set[1]] = 0
+        feet.position[0 + 3*feet_set[2]] -= slide_increment
+        feet.position[2 + 3*feet_set[2]] = 0
+        feet.position[0 + 3*feet_set[3]] -= slide_increment
+        feet.position[2 + 3*feet_set[3]] = 0
+
+        move()
+    
+    feet_set = (2, 3, 0, 1)
+    
+    # leg move phase
+    for i in range(step_increments):
+        t = (i/(step_increments - 1))  # Point along curve, from 0 to 1
+        
+        # Move the foot that is lifting this cycle
+        feet.position[0 + 3*feet_set[0]] = stride.p1[0]*(1-t)**3 + 3*stride.p2[0]*(1-t)**2 + 3*stride.p3[0]*(1-t)*t**2 + stride.p4[0]*t**3
+        feet.position[2 + 3*feet_set[0]] = stride.p1[1]*(1-t)**3 + 3*stride.p2[1]*(1-t)**2 + 3*stride.p3[1]*(1-t)*t**2 + stride.p4[1]*t**3
+
+        # Move the feet that are sliding this cycle
+        feet.position[0 + 3*feet_set[1]] -= slide_increment
+        feet.position[2 + 3*feet_set[1]] = 0
+        feet.position[0 + 3*feet_set[2]] -= slide_increment
+        feet.position[2 + 3*feet_set[2]] = 0
+        feet.position[0 + 3*feet_set[3]] -= slide_increment
+        feet.position[2 + 3*feet_set[3]] = 0
+
+        move()
+
+
+def gait_double():
+    return
+
+
+def gait_waddle():
+    return
+
+
+def gait_gallop():
+    return
+
+
 # Startup stuff
+feet.position = feet.walk_position
+move()
+
+# \/ THIS NEEDS TO BE IN A STARTUP SCRIPT FOR WHEN THE ROBOT TURNS ON \/ (but maybe that's just this script anyway)
+"""
+# Startup stuff
+kit.servo[8].angle = 0
+kit.servo[9].angle = 120
+kit.servo[10].angle = 0
+kit.servo[11].angle = 120
+time.sleep(2)
 reset_pose()
+"""
 
-try:
-    while True:
-        pass
+# Main loop
+while True:
+    gait_single()
 
+"""
 except KeyboardInterrupt:
     reset_pose()
     
@@ -167,4 +302,6 @@ except KeyboardInterrupt:
     time.sleep(1)
     mylcd.lcd_clear()
     mylcd.backlight(0)
+    
     pass
+"""
