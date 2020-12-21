@@ -3,6 +3,7 @@ import numpy as np
 import math
 import signal
 from adafruit_servokit import ServoKit
+from xbox360controller import Xbox360Controller
 import I2C_LCD_driver
 
 # Define the servo controller board and its parameters
@@ -215,29 +216,59 @@ def gait_waddle():
 def gait_gallop():
     return
 
+def on_axis_moved(axis):
+    print('Axis {0} moved to {1} {2}'.format(axis.name, axis.x, axis.y))
+    if axis.name == "axis_l":
+        body.position[0] = -axis.y * 75
+        body.position[1] = axis.x * 75
+    
+    if axis.name == "axis_r":
+        body.position[3] = axis.y * 50
+        body.position[4] = -axis.x * 50
+    
+    if axis.name == "hat":
+        if axis.x == 1:
+            lift_leg(2)
+        elif axis.x == -1:
+            lift_leg(1)
+        elif axis.y == 1:
+            lift_leg(3)
+        elif axis.y == -1:
+            lift_leg(0)
+    move()
 
 # Startup stuff
 feet.position = feet.walk_position
 move()
+with Xbox360Controller() as controller:
+    controller.set_led(Xbox360Controller.LED_BLINK_SLOW)
 
-# \/ THIS NEEDS TO BE IN A STARTUP SCRIPT FOR WHEN THE ROBOT TURNS ON \/ (but maybe that's just this script anyway)
-"""
-# Startup stuff
-kit.servo[8].angle = 0
-kit.servo[9].angle = 120
-kit.servo[10].angle = 0
-kit.servo[11].angle = 120
-time.sleep(2)
-reset_pose()
-"""
+# Main bit
+try:
+    with Xbox360Controller(0, axis_threshold=0) as controller:
+        # Button events
+        controller.button_a.when_pressed = on_button_pressed
+        controller.button_y.when_pressed = on_button_pressed
+        controller.button_trigger_l.when_pressed = on_button_pressed
+        controller.button_trigger_r.when_pressed = on_button_pressed
+        
+        controller.button_a.when_released = on_button_released
+        controller.button_y.when_released = on_button_released
+        controller.button_trigger_l.when_released = on_button_released
+        controller.button_trigger_r.when_released = on_button_released
 
-# Main loop
-while True:
-    gait_single()
+        # Axis move event
+        controller.axis_l.when_moved = on_axis_moved
+        controller.axis_r.when_moved = on_axis_moved
+        controller.hat.when_moved = on_axis_moved
+        
+        signal.pause()
 
-"""
 except KeyboardInterrupt:
     reset_pose()
+    
+    with Xbox360Controller() as controller:
+        controller.set_led(Xbox360Controller.LED_TOP_LEFT_ON)
     
     mylcd.lcd_clear()
     mylcd.lcd_display_string("Shutting", 1, 4)
@@ -245,6 +276,4 @@ except KeyboardInterrupt:
     time.sleep(1)
     mylcd.lcd_clear()
     mylcd.backlight(0)
-    
     pass
-"""
