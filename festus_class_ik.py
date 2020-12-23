@@ -50,8 +50,8 @@ class Stride:
     length = 30  # Distance from midpoint to either extreme of step
     height = 30  # Distance from ground to highest control point of Bezier curve
     lateral_margin = 40  # How close to one side the chassis leans during a step
-    steer = 0  # Target angle to walk at (clockwise from forward=0) (deg)
-
+    steer = np.deg2rad(0)  # Target angle to walk at (clockwise from forward=0) (rad)
+    
 
 # Instantiate various objects
 body = Body()
@@ -156,10 +156,10 @@ def move():
 # 4. 'gallop' (pretty sure this is unstable) -> front right & left, back right & left
 
 def gait_single():  # Make this use less code, just so ugly right now for the sake of rapid testing and modification
-    lean_increments = 25
-    step_increments = 25
+    lean_increments = 20
+    step_increments = 20
     slide_increment = stride.length/step_increments
-    
+
     for i in range(4):
         
         if i == 0:
@@ -170,10 +170,10 @@ def gait_single():  # Make this use less code, just so ugly right now for the sa
             for i in range(lean_increments):
                 body.position[1] += lean_step
                 move()
-
+        
         if i == 1:
             feet_set = (3, 0, 1, 2)
-
+        
         if i == 2:
             feet_set = (0, 1, 2, 3)
         
@@ -190,22 +190,20 @@ def gait_single():  # Make this use less code, just so ugly right now for the sa
         for j in range(step_increments):
             t = (j/(step_increments - 1))  # Point along curve, from 0 to 1
         
-            # Move the foot that is lifting this cycle (Bezier curves)
-            feet.position[0 + 3*feet_set[0]] = (-stride.length*(1-t)**3 + 3*(-stride.length/2)*(1-t)**2 + 6*stride.length*(1-t)*t**2 + stride.length*t**3)#*math.cos(stride.steer)
-            #feet.position[1 + 3*feet_set[0]] = (-stride.length*(1-t)**3 + 3*(-stride.length/2)*(1-t)**2 + 6*stride.length*(1-t)*t**2 + stride.length*t**3)*math.sin(stride.steer)
-            feet.position[2 + 3*feet_set[0]] = ((9*stride.height)/4)*(1-t)**2 + 3*stride.height*(1-t)*t**2
-
+            # Move the foot that is lifting this cycle
+            feet.position[0 + 3*feet_set[0]] = (-1*stride.length*(1-t)**3 + (-3/2)*stride.length*(1-t)**2 + 6*stride.length*(1-t)*t**2 + stride.length*t**3)*math.cos(stride.steer)
+            #feet.position[1 + 3*feet_set[0]] = (-1*stride.length*(1-t)**3 + (-3/2)*stride.length*(1-t)**2 + 6*stride.length*(1-t)*t**2 + stride.length*t**3)*math.sin(stride.steer) + feet.walk_position[1 + 3*feet_set[0]]
+            feet.position[2 + 3*feet_set[0]] = (9/4)*stride.height*(1-t)**2 + 3*stride.height*(1-t)*t**2
             # Move the feet that are sliding this cycle
-            feet.position[0 + 3*feet_set[1]] -= slide_increment#*math.cos(stride.steer)
+            feet.position[0 + 3*feet_set[1]] -= slide_increment*math.cos(stride.steer)
             #feet.position[1 + 3*feet_set[1]] -= slide_increment*math.sin(stride.steer)
             feet.position[2 + 3*feet_set[1]] = 0
-            feet.position[0 + 3*feet_set[1]] -= slide_increment#*math.cos(stride.steer)
-            #feet.position[1 + 3*feet_set[1]] -= slide_increment*math.sin(stride.steer)
+            feet.position[0 + 3*feet_set[2]] -= slide_increment*math.cos(stride.steer)
+            #feet.position[1 + 3*feet_set[2]] -= slide_increment*math.sin(stride.steer)
             feet.position[2 + 3*feet_set[2]] = 0
-            feet.position[0 + 3*feet_set[1]] -= slide_increment#*math.cos(stride.steer)
-            #feet.position[1 + 3*feet_set[1]] -= slide_increment*math.sin(stride.steer)
+            feet.position[0 + 3*feet_set[3]] -= slide_increment*math.cos(stride.steer)
+            #feet.position[1 + 3*feet_set[3]] -= slide_increment*math.sin(stride.steer)
             feet.position[2 + 3*feet_set[3]] = 0
-
             move()
 
 
@@ -224,7 +222,6 @@ def gait_gallop():
 # Startup stuff
 feet.position = feet.walk_position
 move()
-stride.steer = 0
 
 # Main loop
 try:
