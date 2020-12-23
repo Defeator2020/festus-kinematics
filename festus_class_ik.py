@@ -222,6 +222,7 @@ def gait_gallop():
 # Startup stuff
 feet.position = feet.walk_position
 move()
+time.sleep(1)
 
 # Main loop
 try:
