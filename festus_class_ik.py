@@ -46,7 +46,7 @@ class Servos:
 
 class Stride:
     # Define various gait parameters (mm)
-    cg_x_offset = -10  # Forward of center
+    cg_x_offset = -12  # Forward of center
     cg_y_offset = -10  # Right of center
     length = 40  # Distance from midpoint to either extreme of step
     height = 60  # Distance from ground to highest control point of Bezier curve
@@ -162,7 +162,7 @@ def walk():
             feet_set = (1, 2, 3, 0)  # Determines which foot is lifting and which are sliding (lift, slide, slide, slide)
             
             # lean phase
-            lean_step = (feet.position[1] + body.width - stride.single_margin - body.position[1] - stride.cg_x_offset)/lean_increments
+            lean_step = (feet.position[1] + body.width - stride.single_margin - body.position[1] - stride.cg_y_offset)/lean_increments
             for i in range(lean_increments):
                 body.position[1] += lean_step
                 move()
@@ -174,7 +174,7 @@ def walk():
             feet_set = (0, 1, 2, 3)
         
             # lean phase
-            lean_step = (feet.position[4] - body.width + stride.single_margin - body.position[1] - stride.cg_x_offset)/lean_increments
+            lean_step = (feet.position[4] - body.width + stride.single_margin - body.position[1] - stride.cg_y_offset)/lean_increments
             for i in range(lean_increments):
                 body.position[1] += lean_step
                 move()
@@ -205,9 +205,11 @@ def walk():
 
 def trot():
     lean_increments = 20
-    step_increments = 40
+    step_increments = 15
     slide_increment = (2*stride.length)/step_increments
-
+    
+    body.position = [stride.length*math.cos(stride.steer) - stride.cg_x_offset, 0.5*stride.length*math.sin(stride.steer) - stride.cg_y_offset, 190, 0, 0, 0]
+    
     for i in range(2):
         
         if i == 0:
@@ -253,9 +255,11 @@ def gallop():
 # Startup stuff
 body.position = body.walk_position
 feet.position = feet.walk_position
-
-body.position = [0, 0, 190, 0, 0, 0]
 move()
+
+stride.steer = np.deg2rad(270)
+stride.length = 30
+
 time.sleep(1)
 
 # Main loop
