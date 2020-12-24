@@ -30,10 +30,12 @@ class Body:
     position = rest_position
 
 class Feet:
+    walk_lateral = 56
+    
     rest_position = [0, 15, 0, 0, -15, 0, 0, 15, 0, 0, -15, 0]  # x, y, z; rr, rl, fr, fl
     #rest_position = [0, 10, 0, 0, -10, 0, 0, 10, 0, 0, -10, 0]  # x, y, z; rr, rl, fr, fl
     lay_position = [0, 15, 0, 0, -15, 0, 0, 15, 0, 0, -15, 0]  # x, y, z; rr, rl, fr, fl
-    walk_position = [0, 56, 0, 0, -56, 0, 0, 56, 0, 0, -56, 0]  # DEBUG
+    walk_position = [0, walk_lateral, 0, 0, -walk_lateral, 0, 0, walk_lateral, 0, 0, -walk_lateral, 0]  # DEBUG
     
     position = rest_position
 
@@ -47,7 +49,7 @@ class Stride:
     # Define various gait parameters (mm)
     cg_x_offset = -10  # Forward of center
     cg_y_offset = -10  # Right of center
-    length = 60  # Distance from midpoint to either extreme of step
+    length = 40  # Distance from midpoint to either extreme of step
     height = 60  # Distance from ground to highest control point of Bezier curve
     single_margin = 40  # How far from one side the chassis stays during a single step lean
     steer = np.deg2rad(0)  # Target angle to walk at (clockwise from forward=0) (rad)
@@ -209,7 +211,7 @@ def gait_single():
 
 def gait_double():
     lean_increments = 20
-    step_increments = 20
+    step_increments = 40
     slide_increment = (2*stride.length)/step_increments
 
     for i in range(2):
@@ -218,10 +220,10 @@ def gait_double():
             feet_set = (1, 2, 0, 3)  # Determines which feet are lifting and which are sliding (lift, lift, slide, slide)
             
         if i == 1:
-            feet_set = (0, 3, 1, 2)
+            feet_set = (3, 0, 1, 2)
             
         # Assign target points for step
-        foot_start = feet.position[0 + 3*feet_set[0]]
+        foot_start = [feet.position[0 + 3*feet_set[0]], feet.position[1 + 3*feet_set[0]]]
         foot_end = stride.length
         
         # leg move phase
@@ -229,15 +231,19 @@ def gait_double():
             t = (j/(step_increments - 1))  # Point along curve, from 0 to 1
         
             # Move the feet that are lifting this cycle
-            feet.position[0 + 3*feet_set[0]] = foot_start*(1-t)**3 + (3/2)*(foot_start)*t*(1-t)**2 + 6*foot_end*(1-t)*t**2 + foot_end*t**3
+            feet.position[0 + 3*feet_set[0]] = (foot_start[0]*(1-t)**3 + (3/2)*(foot_start[0])*t*(1-t)**2 + 6*foot_end*(1-t)*t**2 + foot_end*t**3)*math.cos(stride.steer)
+            feet.position[1 + 3*feet_set[0]] = (foot_start[1]*(1-t)**3 + (3/2)*(foot_start[1])*t*(1-t)**2 + 6*foot_end*(1-t)*t**2 + foot_end*t**3)*math.sin(stride.steer) - feet.walk_lateral
             feet.position[2 + 3*feet_set[0]] = (9/4)*stride.height*t*(1-t)**2 + 3*stride.height*(1-t)*t**2
-            feet.position[0 + 3*feet_set[1]] = foot_start*(1-t)**3 + (3/2)*(foot_start)*t*(1-t)**2 + 6*foot_end*(1-t)*t**2 + foot_end*t**3
+            feet.position[0 + 3*feet_set[1]] = (foot_start[0]*(1-t)**3 + (3/2)*(foot_start[0])*t*(1-t)**2 + 6*foot_end*(1-t)*t**2 + foot_end*t**3)*math.cos(stride.steer)
+            feet.position[1 + 3*feet_set[1]] = (foot_start[1]*(1-t)**3 + (3/2)*(foot_start[1])*t*(1-t)**2 + 6*foot_end*(1-t)*t**2 + foot_end*t**3)*math.sin(stride.steer) + feet.walk_lateral
             feet.position[2 + 3*feet_set[1]] = (9/4)*stride.height*t*(1-t)**2 + 3*stride.height*(1-t)*t**2
             
             # Move the feet that are sliding this cycle - MAKE THIS A LOOP THAT ONLY MOVES FEET THAT HAVE ALREADY LIFTED
-            feet.position[0 + 3*feet_set[2]] -= slide_increment
+            feet.position[0 + 3*feet_set[2]] -= slide_increment*math.cos(stride.steer)
+            feet.position[1 + 3*feet_set[2]] -= slide_increment*math.sin(stride.steer)
             feet.position[2 + 3*feet_set[2]] = 0
-            feet.position[0 + 3*feet_set[3]] -= slide_increment
+            feet.position[0 + 3*feet_set[3]] -= slide_increment*math.cos(stride.steer)
+            feet.position[1 + 3*feet_set[3]] -= slide_increment*math.sin(stride.steer)
             feet.position[2 + 3*feet_set[3]] = 0
             move()
 
@@ -254,7 +260,7 @@ def gait_gallop():
 body.position = body.walk_position
 feet.position = feet.walk_position
 
-body.position = [40, 0, 190, -3, 0, 0]
+body.position = [0, 0, 190, -3, 0, 0]
 move()
 time.sleep(1)
 
