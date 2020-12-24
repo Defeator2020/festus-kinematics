@@ -33,7 +33,6 @@ class Feet:
     walk_lateral = 56
     
     rest_position = [0, 15, 0, 0, -15, 0, 0, 15, 0, 0, -15, 0]  # x, y, z; rr, rl, fr, fl
-    #rest_position = [0, 10, 0, 0, -10, 0, 0, 10, 0, 0, -10, 0]  # x, y, z; rr, rl, fr, fl
     lay_position = [0, 15, 0, 0, -15, 0, 0, 15, 0, 0, -15, 0]  # x, y, z; rr, rl, fr, fl
     walk_position = [0, walk_lateral, 0, 0, -walk_lateral, 0, 0, walk_lateral, 0, 0, -walk_lateral, 0]  # DEBUG
     
@@ -152,12 +151,7 @@ def move():
 
 
 # Manage the synchronized movement of all four legs for various gaits --------------------
-# 1. single-leg (statically stable) -> back right, front right, back left, front left
-# 2. opposite-leg pairs (dynamically stable) -> front right & back left, front left & back right
-# 3. 'waddle' (not all that stable) -> front & back right, front & back left
-# 4. 'gallop' (pretty sure this is unstable) -> front right & left, back right & left
-      
-def gait_single():
+def walk():
     lean_increments = 20
     step_increments = 30
     slide_increment = stride.length/step_increments
@@ -200,7 +194,7 @@ def gait_single():
             feet.position[0 + 3*feet_set[0]] = foot_start*(1-t)**3 + (3/2)*(foot_start)*t*(1-t)**2 + 6*foot_end*(1-t)*t**2 + foot_end*t**3
             feet.position[2 + 3*feet_set[0]] = (9/4)*stride.height*t*(1-t)**2 + 3*stride.height*(1-t)*t**2
             
-            # Move the feet that are sliding this cycle - MAKE THIS A LOOP THAT ONLY MOVES FEET THAT HAVE ALREADY LIFTED
+            # Move the feet that are sliding this cycle
             feet.position[0 + 3*feet_set[1]] -= slide_increment
             feet.position[2 + 3*feet_set[1]] = 0
             feet.position[0 + 3*feet_set[2]] -= slide_increment
@@ -209,7 +203,7 @@ def gait_single():
             feet.position[2 + 3*feet_set[3]] = 0
             move()
 
-def gait_double():
+def trot():
     lean_increments = 20
     step_increments = 40
     slide_increment = (2*stride.length)/step_increments
@@ -248,11 +242,11 @@ def gait_double():
             move()
 
 
-def gait_waddle():
+def waddle():
     return
 
 
-def gait_gallop():
+def gallop():
     return
 
 
@@ -260,14 +254,14 @@ def gait_gallop():
 body.position = body.walk_position
 feet.position = feet.walk_position
 
-body.position = [0, 0, 190, -3, 0, 0]
+body.position = [0, 0, 190, 0, 0, 0]
 move()
 time.sleep(1)
 
 # Main loop
 try:
     while True:
-        gait_double()
+        trot()
 
 except KeyboardInterrupt:
     reset_pose()
