@@ -49,7 +49,7 @@ class Stride:
     cg_x_offset = -12  # Forward of center
     cg_y_offset = -10  # Right of center
     length = 40  # Distance from midpoint to either extreme of step
-    height = 60  # Distance from ground to highest control point of Bezier curve
+    height = 70  # Distance from ground to highest control point of Bezier curve
     single_margin = 40  # How far from one side the chassis stays during a single step lean
     steer = np.deg2rad(0)  # Target angle to walk at (clockwise from forward=0) (rad)
     
@@ -208,7 +208,7 @@ def trot():
     step_increments = 15
     slide_increment = (2*stride.length)/step_increments
     
-    body.position = [stride.length*math.cos(stride.steer) - stride.cg_x_offset, 0.5*stride.length*math.sin(stride.steer) - stride.cg_y_offset, 190, 0, 0, 0]
+    body.position = [.25*stride.length*math.cos(stride.steer) - stride.cg_x_offset, 0.5*stride.length*math.sin(stride.steer) - stride.cg_y_offset, 190, 0, 0, 0]
     
     for i in range(2):
         
@@ -227,11 +227,11 @@ def trot():
             t = (j/(step_increments - 1))  # Point along curve, from 0 to 1
         
             # Move the feet that are lifting this cycle
-            feet.position[0 + 3*feet_set[0]] = (foot_start[0]*(1-t)**3 + (3/2)*(foot_start[0])*t*(1-t)**2 + 6*foot_end*(1-t)*t**2 + foot_end*t**3)*math.cos(stride.steer)
-            feet.position[1 + 3*feet_set[0]] = (foot_start[1]*(1-t)**3 + (3/2)*(foot_start[1])*t*(1-t)**2 + 6*foot_end*(1-t)*t**2 + foot_end*t**3)*math.sin(stride.steer) - feet.walk_lateral
+            feet.position[0 + 3*feet_set[0]] = (foot_start[0]*(1-t)**3 + (3*foot_start[0])*t*(1-t)**2 + 6*foot_end*(1-t)*t**2 + foot_end*t**3)*math.cos(stride.steer)
+            feet.position[1 + 3*feet_set[0]] = (foot_start[1]*(1-t)**3 + (3*foot_start[1])*t*(1-t)**2 + 6*foot_end*(1-t)*t**2 + foot_end*t**3)*math.sin(stride.steer) - feet.walk_lateral
             feet.position[2 + 3*feet_set[0]] = (9/4)*stride.height*t*(1-t)**2 + 3*stride.height*(1-t)*t**2
-            feet.position[0 + 3*feet_set[1]] = (foot_start[0]*(1-t)**3 + (3/2)*(foot_start[0])*t*(1-t)**2 + 6*foot_end*(1-t)*t**2 + foot_end*t**3)*math.cos(stride.steer)
-            feet.position[1 + 3*feet_set[1]] = (foot_start[1]*(1-t)**3 + (3/2)*(foot_start[1])*t*(1-t)**2 + 6*foot_end*(1-t)*t**2 + foot_end*t**3)*math.sin(stride.steer) + feet.walk_lateral
+            feet.position[0 + 3*feet_set[1]] = (foot_start[0]*(1-t)**3 + (3*foot_start[0])*t*(1-t)**2 + 6*foot_end*(1-t)*t**2 + foot_end*t**3)*math.cos(stride.steer)
+            feet.position[1 + 3*feet_set[1]] = (foot_start[1]*(1-t)**3 + (3*foot_start[1])*t*(1-t)**2 + 6*foot_end*(1-t)*t**2 + foot_end*t**3)*math.sin(stride.steer) + feet.walk_lateral
             feet.position[2 + 3*feet_set[1]] = (9/4)*stride.height*t*(1-t)**2 + 3*stride.height*(1-t)*t**2
             
             # Move the feet that are sliding this cycle - MAKE THIS A LOOP THAT ONLY MOVES FEET THAT HAVE ALREADY LIFTED
@@ -257,8 +257,8 @@ body.position = body.walk_position
 feet.position = feet.walk_position
 move()
 
-stride.steer = np.deg2rad(270)
-stride.length = 30
+stride.steer = np.deg2rad(180)
+stride.length = 40
 
 time.sleep(1)
 
