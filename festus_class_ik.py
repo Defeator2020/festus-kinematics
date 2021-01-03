@@ -206,9 +206,14 @@ def walk():
 def trot():
     lean_increments = 20
     step_increments = 15
+    lean = [0, 0]
     slide_increment = (2*stride.length)/step_increments
     
     body.position = [stride.length*math.cos(stride.steer) - stride.cg_x_offset, 0.5*stride.length*math.sin(stride.steer) - stride.cg_y_offset, 190, 0, 0, 0]
+    
+    # Lean in the correct direction for the steps
+    if body.position[0] != lean[0] or body.position[1] != lean[1]:
+        # Put lean thingy here!!!!!
     
     for i in range(2):
         
