@@ -206,14 +206,20 @@ def walk():
 def trot():
     lean_increments = 20
     step_increments = 15
-    lean = [0, 0]
     slide_increment = (2*stride.length)/step_increments
     
-    body.position = [.25*stride.length*math.cos(stride.steer) - stride.cg_x_offset, 0.5*stride.length*math.sin(stride.steer) - stride.cg_y_offset, 190, 0, 0, 0]
+    # ADJUST LEAN COEFFICIENTS SO THAT IT, WELL, WORKS (the 0.25 and the 0.5) --> INSTEAD OF USING ABSOLUTE INCREMENTS, MAKE THEM BASED ON DISTANCE TO TRAVEL (distance/interval distance)
+    lean = [0.25*stride.length*math.cos(stride.steer) - stride.cg_x_offset, 0.5*stride.length*math.sin(stride.steer) - stride.cg_y_offset]
     
     # Lean in the correct direction for the steps
     if body.position[0] != lean[0] or body.position[1] != lean[1]:
-        # Put lean thingy here!!!!!
+        
+        lean_start = [body.position[0], body.position[1]]
+        
+        for j in range(lean_increments):
+            body.position[0] += (j/lean_increments)*(lean[0] - body_start[0])
+            body.position[1] += (j/lean_increments)*(lean[1] - body_start[1])
+            move()
     
     for i in range(2):
         
@@ -262,8 +268,8 @@ body.position = body.walk_position
 feet.position = feet.walk_position
 move()
 
-stride.steer = np.deg2rad(180)
-stride.length = 40
+stride.steer = np.deg2rad(0)
+stride.length = 40 # INTEGRATE THIS INTO A "SPEED" PARAMETER -> SCALE THE INTERVAL AND/OR TIMING TOO, NOT JUST THE LENGTH?
 
 time.sleep(1)
 
