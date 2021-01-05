@@ -208,6 +208,8 @@ def trot():
     step_increments = 15
     slide_increment = (2*stride.length)/step_increments
     
+    body.position = [0.5*stride.length*math.cos(stride.steer) - stride.cg_x_offset, 0.5*stride.length*math.sin(stride.steer) - stride.cg_y_offset, 190, 0, 0, 0]
+    """
     # ADJUST LEAN COEFFICIENTS SO THAT IT, WELL, WORKS (the 0.25 and the 0.5) --> INSTEAD OF USING ABSOLUTE INCREMENTS, MAKE THEM BASED ON DISTANCE TO TRAVEL (distance/interval distance)
     lean = [0.25*stride.length*math.cos(stride.steer) - stride.cg_x_offset, 0.5*stride.length*math.sin(stride.steer) - stride.cg_y_offset]
     
@@ -217,9 +219,10 @@ def trot():
         lean_start = [body.position[0], body.position[1]]
         
         for j in range(lean_increments):
-            body.position[0] += (j/lean_increments)*(lean[0] - body_start[0])
-            body.position[1] += (j/lean_increments)*(lean[1] - body_start[1])
+            body.position[0] += (j/lean_increments)*(lean[0] - lean_start[0])
+            body.position[1] += (j/lean_increments)*(lean[1] - lean_start[1])
             move()
+    """
     
     for i in range(2):
         
