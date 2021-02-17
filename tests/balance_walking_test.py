@@ -2,8 +2,24 @@ import time
 import threading
 import numpy as np
 from math import sqrt, sin, cos, acos, atan
+import signal
+
+import os
+import sys
+import smbus
+import busio
+import board
+
 from adafruit_servokit import ServoKit
+import adafruit_fxos8700
+import adafruit_fxas21002c
+from imusensor.filters import kalman 
 import I2C_LCD_driver
+
+# Initialize I2C bus and device.
+i2c = busio.I2C(board.SCL, board.SDA)
+mag_accel = adafruit_fxos8700.FXOS8700(i2c)
+gyro = adafruit_fxas21002c.FXAS21002C(i2c)
 
 # Define the servo controller board and its parameters
 kit = ServoKit(channels=16)
@@ -55,12 +71,29 @@ class Stride:
     single_margin = 40  # How far from one side the chassis stays during a single step lean
     steer = np.deg2rad(0)  # Target angle to walk at (clockwise from forward=0) (rad)
     
+class IMU():
+    # Define various IMU parameters
+    # Orientation PID stuff
+    # count = 0
+    balance_P = 0.01
+    balance_D = balance_P/4
+    balance_I = balance_D/10
+
+    pitch_prev_error = 0
+    roll_prev_error = 0
+    pitch_sum_error = 0
+    roll_sum_error = 0
+    target_pitch = -3
+    target_roll = 0
+    currTime = time.time()
 
 # Instantiate various objects
 body = Body()
 feet = Feet()
 servos = Servos()
 stride = Stride()
+imu = IMU()
+sensorfusion = kalman.Kalman()
 mylcd = I2C_LCD_driver.lcd()
 """
 mylcd.backlight(1)
@@ -152,7 +185,7 @@ def move():
     except:
         print("Angle out of range!")
 
-# UPDATE WITH LEARNINGS (AND DIRECTIONALITY) FROM TROT GAIT
+
 # Manage the synchronized movement of all four legs for various gaits --------------------
 def walk():
     lean_increments = 10
@@ -269,18 +302,6 @@ def waddle():
 def gallop():
     return
 
-# TESTING BITS -----------------------------------------------------
-# Define a function for the move thread to run
-def move_thread():
-    while True:
-        thread_lock.acquire()
-        trot(stride.length, stride.steer, stride.height)
-        thread_lock.release()
-        time.sleep(0.025)
-
-#-------------------------------------------------------------------
-
-
 
 # Startup stuff
 body.position = body.walk_position
@@ -290,22 +311,70 @@ move()
 stride.steer = np.deg2rad(0)
 stride.length = 0 # INTEGRATE THIS INTO A "SPEED" PARAMETER -> SCALE THE INTERVAL AND/OR TIMING TOO, NOT JUST THE LENGTH?
 
+# Pause for a second so I can frantically grab the robot after hitting start
 time.sleep(1.5)
 
+# TESTING BITS -----------------------------------------------------
+# Define a function for the move thread to run
+def read_imu():
+	# Read acceleration & magnetometer.
+	accel_x, accel_y, accel_z = mag_accel.accelerometer
+	mag_x, mag_y, mag_z = mag_accel.magnetometer
+	gyro_x, gyro_y, gyro_z = gyro.gyroscope
+
+	return accel_x, accel_y, accel_z, mag_x, mag_y, mag_z, gyro_x, gyro_y, gyro_z
+
+def move_thread_f():
+    while True:
+        #thread_lock.acquire()
+        trot(stride.length, stride.steer, stride.height)
+        #thread_lock.release()
+        time.sleep(0.025)
+
+def imu_thread_f():
+    while True:
+        accel_x, accel_y, accel_z, mag_x, mag_y, mag_z, gyro_x, gyro_y, gyro_z = read_imu()
+        newTime = time.time()
+        dt = newTime - imu.currTime
+        imu.currTime = newTime
+        
+        sensorfusion.computeAndUpdateRollPitchYaw(accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z, mag_x, mag_y, mag_z, dt)
+        
+        if sensorfusion.roll > 5 or sensorfusion.pitch > 5:
+        
+            # PID Bits
+            imu.pitch_error = imu.target_pitch - sensorfusion.roll
+            imu.roll_error = imu.target_roll - sensorfusion.pitch
+        
+            #thread_lock.acquire()
+            body.position[3] -= imu.pitch_error*imu.balance_P + imu.pitch_prev_error*imu.balance_D + imu.pitch_sum_error*imu.balance_I
+            body.position[4] += imu.roll_error*imu.balance_P + imu.roll_prev_error*imu.balance_D + imu.roll_sum_error*imu.balance_I
+            #thread_lock.release()
+        
+        
+            imu.pitch_prev_error = imu.pitch_error
+            imu.roll_prev_error = imu.roll_error
+            imu.pitch_sum_error += imu.pitch_error
+            imu.roll_sum_error += imu.roll_error
+        
+        time.sleep(0.1)
 
 
-# IMPORTANT MAIN BITS ------------------------------------------------
 # Create a lock to prevent simultaneous access of variables
 thread_lock = threading.Lock()
 
 # Create threads to manage the various important operational bits
-step_thread = threading.Thread(target=move_thread)
-#orientation_thread = threading.Thread(target= , args=())
+step_thread = threading.Thread(target=move_thread_f)
+orientation_thread = threading.Thread(target=imu_thread_f)
+
+#-------------------------------------------------------------------
 
 try:
-    while True:
-        step_thread.start()
-        step_thread.join()
+    step_thread.start()
+    orientation_thread.start()
+    
+    orientation_thread.join()
+    step_thread.join()
 
 except KeyboardInterrupt:
     reset_pose()
