@@ -1,5 +1,4 @@
 import time
-import threading
 import numpy as np
 from math import sqrt, sin, cos, acos, atan
 from adafruit_servokit import ServoKit
@@ -16,13 +15,13 @@ class Body:
     # Define the size of various system elements (mm)
     length = 90  # Halfway between front to rear leg pivots
     width = 40  # Halfway between hip pivots
-    mass = 1.41  # kg
-    total_mass = 2.25  # kg
     hip_offset = 56
     upper_leg = 108
     lower_leg = 133
     radius = sqrt(length**2 + width**2)  # Distance from center of body to shoulder (mm)
     alpha = atan(width/length)  # Existing angle between +x-axis and radius line about center of body (rad)
+    
+    marg_offset = [0, 0, 0]
     
     # Define some useful positions
     rest_position = [0, 0, 190, 0, 0, 0]  # x, y, z (mm), pitch, roll, yaw (deg)
@@ -32,7 +31,7 @@ class Body:
     position = rest_position
 
 class Feet:
-    walk_lateral = 56
+    walk_lateral = 45 #56
     
     rest_position = [0, 15, 0, 0, -15, 0, 0, 15, 0, 0, -15, 0]  # x, y, z; rr, rl, fr, fl
     lay_position = [0, 15, 0, 0, -15, 0, 0, 15, 0, 0, -15, 0]  # x, y, z; rr, rl, fr, fl
@@ -50,15 +49,9 @@ class Stride:
     # Define various gait parameters (mm)
     cg_x_offset = -5  # Forward of center
     cg_y_offset = 2  # Right of center
-    
-    cg_length = 74.3  # mm
-    cg_mass = 0.21  # kg
-    support_1 = [-1, 1]  # Rear supporting foot coordinates: x, y
-    support_2 = [1, -1]  # Front supporting foor coordinates: x, y
-    leg_angles = [0]*12  # rr, rl, fr, fl wrists; rr, rl, fr, fl shoulders; rr, rl, fr, fl hips
-    
     length = 40  # Distance from midpoint to either extreme of step
     height = 70  # Distance from ground to highest control point of Bezier curve
+    single_margin = 40  # How far from one side the chassis stays during a single step lean
     steer = np.deg2rad(0)  # Target angle to walk at (clockwise from forward=0) (rad)
     
 
@@ -132,22 +125,6 @@ def leg_angles():
         servos.positions[12 + leg] = (hip_angle + ((-1)**(leg+1))*body.position[4])*servos.flip[12 + leg] + servos.offsets[12 + leg] + 60
         servos.positions[8 + leg] = (shoulder_base_angle + shoulder_offset + body.position[3])*servos.flip[8 + leg] + servos.offsets[8 + leg] + 60
         servos.positions[4 + leg] = (wrist_angle)*servos.flip[4 + leg] + servos.offsets[4 + leg] + 60
-        
-        stride.leg_angles[8 + leg] = hip_angle + ((-1)**(leg+1))*body.position[4]
-        stride.leg_angles[4 + leg] = shoulder_base_angle + shoulder_offset + body.position[3]
-
-def zmp_calcs():  # support_1 is back leg, support_2 is front leg (does it matter?)
-    zmp_x = (stride.cg_length*stride.cg_mass*(sin(stride.leg_angles[4]) + sin(stride.leg_angles[5]) + sin(stride.leg_angles[6]) + sin(stride.leg_angles[7])))/body.total_mass  # NEEDS TO TAKE INTO ACCOUNT THE SHORTENING OF THE LEG DUE TO THE SHOULDER ANGLE IF BODY NOT FLAT -> LEG LENGTH CHANGES HERE
-    zmp_y = (stride.cg_length*stride.cg_mass*(sin(stride.leg_angles[8]) + sin(stride.leg_angles[9]) + sin(stride.leg_angles[10]) + sin(stride.leg_angles[11])))/body.total_mass  # NEEDS TO TAKE INTO ACCOUNT THE SHORTENING OF THE LEG DUE TO THE SHOULDER ANGLE IF HIP NOT VERTICAL -> LEG LENGTH CHANGES HERE
-    
-    #zmp_cost_x = (stride.support_2[0] - stride.support_1[0])*(zmp_y - stride.support_1[1])/(stride.support_2[1] - stride.support_1[1]) - zmp_x
-    #zmp_cost_y = (stride.support_2[1] - stride.support_1[1])*(zmp_x - stride.support_1[0])/(stride.support_2[0] - stride.support_1[0]) - zmp_y
-    zmp_cost_x = stride.support_1[0] - (stride.support_1[0] - stride.support_2[0])*(zmp_y - stride.support_1[1])/(stride.support_2[1] - stride.support_1[1]) - zmp_x
-    zmp_cost_y = stride.support_1[1] - (stride.support_1[1] - stride.support_2[1])*(zmp_x - stride.support_1[0])/(stride.support_2[0] - stride.support_1[0]) - zmp_y
-    
-    print(zmp_cost_x)
-    print(zmp_cost_y)
-    return zmp_cost_x, zmp_cost_y
 
 # Write positions to servos
 def write_to_servos():
@@ -164,25 +141,10 @@ def reset_pose():
 
 # Calculate the servo angles and write them to the servos, checking for errors
 def move():
-    zmp_error_x = 100  # VALUE FOR THIS?
-    zmp_error_y = 100
-    zmp_error_threshold = 10  # VALUE FOR THIS?
-
     try:
         leg_angles()
     except:
         print("Math domain error!")
-    
-    #shift_x, shift_y = zmp_calcs()
-    #body.position[1] -= shift_y  # Lean in the y direction to be on the support axis
-    
-    #while zmp_error_x > zmp_error_threshold:
-    #    try:
-    #        leg_angles()
-    #    except:
-    #        print("Math domain error!")
-    #    zmp_error_x, zmp_error_y = zmp_calcs()
-    #    body.position[1] -= zmp_error_y
     
     try:
         write_to_servos()
@@ -191,7 +153,6 @@ def move():
 
 # UPDATE WITH LEARNINGS (AND DIRECTIONALITY) FROM TROT GAIT
 # Manage the synchronized movement of all four legs for various gaits --------------------
-"""
 def walk():
     lean_increments = 10
     step_increments = 20
@@ -243,13 +204,12 @@ def walk():
             feet.position[0 + 3*feet_set[3]] -= slide_increment
             feet.position[2 + 3*feet_set[3]] = 0
             move()
-"""
 
 def trot(stride_length, stride_steer, stride_height):
-    feet_set = (1, 2, 0, 3, 3, 0, 1, 2) # Determines which feet are lifting and which are sliding (lift, lift, slide, slide) (0 = rr, 1 = rl, 2 = fr, 3 = fl)
+    feet_set = (1, 2, 0, 3, 3, 0, 1, 2) # Determines which feet are lifting and which are sliding (lift, lift, slide, slide)
     feet_position = feet.position
     lean_increments = 20
-    step_increments = 10#12
+    step_increments = 12
     slide_increment = (2*stride_length)/step_increments
     
     # ADJUST LEAN COEFFICIENTS SO THAT IT, WELL, WORKS (the 0.25 and the 0.5) --> INSTEAD OF USING ABSOLUTE INCREMENTS, MAKE THEM BASED ON DISTANCE TO TRAVEL (distance/interval distance)
@@ -292,14 +252,7 @@ def trot(stride_length, stride_steer, stride_height):
             feet_position[2 + 3*feet_set[4*i + 3]] = 0
             
             feet.position = feet_position
-            
-            stride.support_1[0] = -body.length + feet_position[3*feet_set[4*i + 2]]
-            stride.support_1[1] = (body.width + feet.walk_lateral)*(-1)**feet_set[4*i + 2] #-feet.walk_lateral-body.width
-            stride.support_2[0] = body.length + feet_position[3*feet_set[4*i + 3]]
-            stride.support_2[1] = (body.width + feet.walk_lateral)*(-1)**feet_set[4*i + 3] #feet.walk_lateral+body.width
-            
             move()
-            #time.sleep(0.01)
 
 
 def waddle():
@@ -309,46 +262,27 @@ def waddle():
 def gallop():
     return
 
-# TESTING BITS -----------------------------------------------------
-# Define a function for the move thread to run
-def move_thread():
-    while True:
-        trot(stride.length, stride.steer, stride.height)
-        time.sleep(0.025)
-
-#-------------------------------------------------------------------
-
-
 
 # Startup stuff
 body.position = body.walk_position
 feet.position = feet.walk_position
-#stride.support_1[0] = -body.length
-#stride.support_1[1] = -feet.walk_lateral - body.width
-#stride.support_2[0] = body.length
-#stride.support_2[1] = feet.walk_lateral + body.width
 move()
 
 stride.steer = np.deg2rad(0)
-stride.length = 30 # INTEGRATE THIS INTO A "SPEED" PARAMETER -> SCALE THE INTERVAL AND/OR TIMING TOO, NOT JUST THE LENGTH?
+stride.length = 40 # INTEGRATE THIS INTO A "SPEED" PARAMETER -> SCALE THE INTERVAL AND/OR TIMING TOO, NOT JUST THE LENGTH?
 
 time.sleep(1.5)
 
-
-
-# IMPORTANT MAIN BITS ------------------------------------------------
-# Create a lock to prevent simultaneous access of variables
-#thread_lock = threading.Lock()
-
-# Create threads to manage the various important operational bits
-step_thread = threading.Thread(target=move_thread)
-#orientation_thread = threading.Thread(target= , args=())
-
 try:
     while True:
-        step_thread.start()
-        step_thread.join()
-
+        stride.steer = int(input("Input a steer direction: "))
+        stride.length = int(input("Input a stride length: "))
+        iterations = int(input("Input number of times to step: "))
+        
+        for step in range(iterations):
+            trot(stride.length, stride.steer, stride.height)
+            time.sleep(0.025)
+        
 except KeyboardInterrupt:
     reset_pose()
     

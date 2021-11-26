@@ -58,14 +58,14 @@ class Feet:
 
 class Servos:
     # Define various servo properties (offset to make 0 straight down, rest positions, and the flip value to compensate for different servo directions)
-    offsets = [0, 0, 0, 0, -68, 76, -78, 78, 19, -26, 28, -28, 11, -2, -9, -5]  # 1, 2, 3, 4 peripheral; rr, rl, fr, fl wrists; rr, rl, fr, fl shoulders; rr, rl, fr, fl hips (same for all three)
-    positions = [90, 90, 90, 90, 76, 45, 72, 48, 33, 87, 37, 83, 89, 40, 36, 73]
+    offsets = [0, 0, 0, 0, -66, 77, -78, 76, 17, -27, 28, -26, 11, -2, -9, -5]  # 1, 2, 3, 4 peripheral; rr, rl, fr, fl wrists; rr, rl, fr, fl shoulders; rr, rl, fr, fl hips (same for all three)
+    positions = [90, 90, 90, 90, 74, 46, 72, 46, 31, 88, 37, 81, 89, 40, 36, 73]
     flip = [1, 1, 1, 1, 1, -1, 1, -1, -1, 1, -1, 1, -1, 1, 1, -1]
 
 class Stride:
     # Define various gait parameters (mm)
-    cg_x_offset = -10  # Forward of center
-    cg_y_offset = 0  # Right of center
+    cg_x_offset = -5  # Forward of center
+    cg_y_offset = 2  # Right of center
     length = 40  # Distance from midpoint to either extreme of step
     height = 70  # Distance from ground to highest control point of Bezier curve
     single_margin = 40  # How far from one side the chassis stays during a single step lean
